@@ -11,15 +11,15 @@
   const VIEWS = ["home", "resources", "team", "search"];
   const RECENT_LIMIT = 4;
   const TONES = {
-    buyers: { ink: "#9F1239", bright: "#FDA4AF", tint: "#FFF1F2", dark: "#3F121C" },
-    listings: { ink: "#B42318", bright: "#FF8A80", tint: "#FEF3F2", dark: "#3D1512" },
-    rentals: { ink: "#B45309", bright: "#FBBF24", tint: "#FFF7ED", dark: "#3B2410" },
-    ideas: { ink: "#6D28D9", bright: "#C4B5FD", tint: "#F5F3FF", dark: "#2A1848" },
-    start: { ink: "#9D174D", bright: "#F9A8D4", tint: "#FDF2F8", dark: "#3B1024" },
-    playbooks: { ink: "#047857", bright: "#6EE7B7", tint: "#ECFDF5", dark: "#0C2E24" },
-    tools: { ink: "#1D4ED8", bright: "#93C5FD", tint: "#EFF6FF", dark: "#142848" },
-    market: { ink: "#0F766E", bright: "#5EEAD4", tint: "#F0FDFA", dark: "#0C2C2A" },
-    dash: { ink: "#4338CA", bright: "#A5B4FC", tint: "#EEF2FF", dark: "#1E1B4B" },
+    buyers: { ink: "#A56B76", bright: "#C9A3AB", tint: "#FBF7F8", dark: "#2A2828" },
+    listings: { ink: "#CA0516", bright: "#E7A3A8", tint: "#FBF7F7", dark: "#2A2828" },
+    rentals: { ink: "#A6845A", bright: "#CDB48A", tint: "#FBF8F4", dark: "#2A2828" },
+    ideas: { ink: "#7A7194", bright: "#B3A9C9", tint: "#F8F7FA", dark: "#2A2828" },
+    start: { ink: "#A56B76", bright: "#C9A3AB", tint: "#FBF7F8", dark: "#2A2828" },
+    playbooks: { ink: "#5F7F6E", bright: "#9BB5A6", tint: "#F6F8F7", dark: "#2A2828" },
+    tools: { ink: "#5E7394", bright: "#A7B6CC", tint: "#F6F8FB", dark: "#2A2828" },
+    market: { ink: "#5E807C", bright: "#9BB8B4", tint: "#F6F8F8", dark: "#2A2828" },
+    dash: { ink: "#6A6794", bright: "#B0ADC9", tint: "#F7F7FA", dark: "#2A2828" },
   };
   const QUICK_ACTIONS = [
     { label: "Offer to Purchase", title: "Offer to Purchase", tone: "listings" },
