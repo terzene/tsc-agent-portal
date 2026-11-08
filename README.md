@@ -25,9 +25,9 @@ iPhone only installs this app from Safari. Chrome on iPhone cannot add it to the
 
 ## Use the portal
 
-- **Forms** is the home screen. The form list is on top, and the BOLD Truths sit directly underneath, with a Truth of the day at the top of that section.
-- **Resources** is the other tab.
-- Search looks across forms, resources, and BOLD Truths at once.
+- **Home** starts with search, pins, and recent forms, then Most used, then forms in collapsible groups (Buyers, Listings, Rentals, Team & Ideas). The BOLD Truths, with a Truth of the day, sit under the groups.
+- **Resources** groups the library into Start Here, Playbooks, Listing Tools, and Market & Pricing.
+- **Search** in the bottom bar looks across forms, resources, and BOLD Truths.
 - Pin a form with the star. Pins and the last few forms you opened stay on this phone.
 - The sun and moon button switches light and dark. Share sends the portal link.
 - Form and resource buttons open the original link in a new tab (Safari on iPhone, Chrome on Android).
