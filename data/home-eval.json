@@ -1,0 +1,57 @@
+{
+  "sourceUrl": "https://docs.google.com/document/d/1KcEN54x2rOD8k5oebQEnyraqoQEvxcae9pPGHXgae4I/edit?usp=drivesdk",
+  "sourceTitle": "AI Prompt Home Price Eval",
+  "docName": "Home Eval Prompt",
+  "geminiUrl": "https://gemini.google.com/app",
+  "intro": "Advanced pricing prompt for Google Gemini Pro\nBest if you switch Gemini to ‘Thinking’ from ‘Fast’ mode at the bottom by the entry bar. From there, you can enter minimal info, but the more detail you provide, the better the output. Most important inputs are:\n* Property address\n* Condition\n* Anything that impacts value positively or negatively \nIt will break pricing down into 3 useful categories:\n1. As-Is / Quick Sale Range\n2. Fair Market Value\n3. Aspirational / Premium Pricing\nAnd give you a Suggested List Price. If the pricing seems high or low from your gut check, you can challenge it and tell it: it seems high, due to Y factor… Lastly, there’s a confidence level to double check the weight of the numbers it gave you.\nWhy this matters: AI helps remove emotion and personal bias from pricing decisions. It’s not perfect, and it won’t replace skill or local knowledge, but it’s a powerful second opinion.\nMy recommendation:\n* Use it anytime you need to price a home (for buyer or seller)\n* Use it to pressure-test your own opinion\n* Use it for buyers to estimate where a multiple-offer property may land\n* Use it when a listing has no activity and you need a reality check\n————————————————————————————-—",
+  "prompt": "Act as an elite real estate valuation analyst, licensed appraiser-level CMA expert, and pricing strategist.\nI need the most accurate possible home evaluation for this property:\nADDRESS: [Insert Property Address]\nSTYLE: [e.g., Raised Ranch, Colonial, Split-Level, Cape Cod]\nYEAR BUILT: [Insert Exact Year Built If Known]\nBEDS / BATHS: [Insert Beds] / [Insert Baths] (If Known)\nCONDITION: [Insert Rating, e.g., 8] out of 10 ([Insert Brief Description, e.g., Turnkey, Highly Presentable, Dated but Clean]) (If Known)\nIMPORTANT NOTES & POSITIVE PREMIUMS: [Key Mechanical Updates, e.g., Brand new furnace 2026, roof replaced 2022], [Lot Size & Usability, e.g., 1.77 AC, roughly 50% usable, high privacy wood line], [Updated Kitchen, Baths, Primary], [Layout and X Factors/Features]\nNEGATIVE FACTORS / PROPERTY DETRACTORS: [Damp Basement, Mold], [Underground Oil Tank], [Solar Panels], [Outdated Elements], [Functional Obsolescence, e.g., Walk-through bedroom, kitchen located on a lower level, no garage access from house], [External/Location Detractors, e.g., Backs up to a busy main county road, high-voltage power lines visible, close to commercial zoning], [Mechanical Deficiencies, e.g., Original 40-year-old septic system, private well water testing high for iron, no central air]\nCOMP-FILTERING RULES (CRITICAL FOR ACCURACY):\n- Do not anchor the valuation to standard, down-market neighborhood baselines for example that are structurally inferior (e.g., avoid much older homes), homes with much fewer beds/bathrooms, or much less sqft or lot sizes.\n- Filter recent sold, pending, and active comps strictly for constructions that match the subject's modern structural era, full bathroom utility tier, and premium lot/privacy features.\n- Ensure comps are adjusted downward if they do not share the severe negative factors listed above.\nYour job is to do the rest of the research with minimal input from me.\nI need deep research using all available public data and market intelligence, including:\n• Recent sold comps\n• Pending and active competition\n• Price reductions\n• Days on market\n• Price per sq ft trends\n• Lot and location premiums\n• School district impact\n• Property style/age/value drivers\n• Buyer demand in that micro-market\n• Neighborhood trends\n• Seasonal timing effects\n• Likely unseen risks or value boosts based on area and property type\nDeliver an appraisal-quality 3-tier pricing strategy:\n1. As-Is / Quick Sale Value\n2. Fair Market Value (realistic current value)\n3. Premium Retail Value (if presented correctly / updated)\nOutput exactly like this:\n1. Executive Summary\n2. Subject Property Snapshot (what you found)\n3. Best Sold Comps with reasoning\n4. Active / Pending Competition\n5. Market Trends\n6. Pricing Adjustments & Logic\n7. 3-Tier Price Range\n8. Exact Recommended List Price Today\n9. Zillow Zestimate, and any other home values that commonly show up when searching the address\n10. Best Negotiation Strategy\n11. Risks That Could Hurt Value\n12. Confidence Level (1-10)\nBe brutally honest. Do not inflate value. If data is limited, state assumptions clearly. Prioritize accuracy over optimism. Review and analyze satellite images (like from sources like Google Maps) for important things like pools, area, neighborhoods, condition, etc… Think like a top appraiser + top listing agent combined.",
+  "fields": [
+    {
+      "id": "address",
+      "label": "Property address",
+      "token": "[Insert Property Address]"
+    },
+    {
+      "id": "style",
+      "label": "Style",
+      "token": "[e.g., Raised Ranch, Colonial, Split-Level, Cape Cod]"
+    },
+    {
+      "id": "year",
+      "label": "Year built",
+      "token": "[Insert Exact Year Built If Known]"
+    },
+    {
+      "id": "beds",
+      "label": "Beds",
+      "token": "[Insert Beds]"
+    },
+    {
+      "id": "baths",
+      "label": "Baths",
+      "token": "[Insert Baths]"
+    },
+    {
+      "id": "rating",
+      "label": "Condition rating",
+      "token": "[Insert Rating, e.g., 8]"
+    },
+    {
+      "id": "condition",
+      "label": "Condition description",
+      "token": "[Insert Brief Description, e.g., Turnkey, Highly Presentable, Dated but Clean]"
+    },
+    {
+      "id": "positives",
+      "label": "Positive premiums and notes",
+      "multiline": true,
+      "token": "[Key Mechanical Updates, e.g., Brand new furnace 2026, roof replaced 2022], [Lot Size & Usability, e.g., 1.77 AC, roughly 50% usable, high privacy wood line], [Updated Kitchen, Baths, Primary], [Layout and X Factors/Features]"
+    },
+    {
+      "id": "negatives",
+      "label": "Negative factors",
+      "multiline": true,
+      "token": "[Damp Basement, Mold], [Underground Oil Tank], [Solar Panels], [Outdated Elements], [Functional Obsolescence, e.g., Walk-through bedroom, kitchen located on a lower level, no garage access from house], [External/Location Detractors, e.g., Backs up to a busy main county road, high-voltage power lines visible, close to commercial zoning], [Mechanical Deficiencies, e.g., Original 40-year-old septic system, private well water testing high for iron, no central air]"
+    }
+  ]
+}
