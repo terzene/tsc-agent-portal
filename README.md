@@ -27,7 +27,7 @@ iPhone only installs this app from Safari. Chrome on iPhone cannot add it to the
 
 - **Home** opens with a greeting and the Truth of the day, then search, pins, recent forms, four quick actions, and the form groups. The rest of the BOLD Truths sit under the groups.
 - **Resources** groups the library into Start Here, Playbooks, Listing Tools, and Market & Pricing.
-- **Team** lists Tony Erzene, Miranda Moore, and Keisha Dickerson. Tony’s card is email only. Miranda and Keisha have call, text, and email.
+- **Team** lists Miranda Moore and Keisha Dickerson, with call, text, and email. Need help? emails team@thesoldcollective.com.
 - **Search** in the bottom bar looks across forms, resources, and BOLD Truths.
 - The first visit can save a first name on this phone. It is not sent anywhere.
 - Pin a form with the star. Pins and the last few forms you opened stay on this phone.

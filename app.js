@@ -537,11 +537,11 @@
   function renderTeam() {
     meta.textContent = "";
     const people = Array.isArray(state.data.team) ? state.data.team : [];
-    const helper = people.find((person) => String(person && person.email || "").trim().toLowerCase() === "tony@notcityliving.com");
-    if (helper) {
+    const helpEmail = String(state.data.helpEmail || "").trim();
+    if (helpEmail.includes("@")) {
       const help = document.createElement("a");
       help.className = "help-btn";
-      help.href = "mailto:" + String(helper.email).trim();
+      help.href = "mailto:" + helpEmail;
       help.textContent = "Need help?";
       panel.append(help);
     }
