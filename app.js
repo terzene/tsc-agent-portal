@@ -10,10 +10,11 @@
   const NAME_ASKED_KEY = "tsc-portal-name-asked";
   const VIEWS = ["home", "resources", "team", "search"];
   const RECENT_LIMIT = 4;
-  const MOST_USED = [
+  const QUICK_ACTIONS = [
     "Offer to Purchase",
-    "New Listing Paperwork",
     "BAA / CIS & Disclosures",
+    "Local Market",
+    "New Listing Paperwork",
     "Quick Comps",
   ];
   const FORM_GROUPS = [
@@ -350,10 +351,10 @@
     if (recent.length) panel.append(stack(recent.map((item) => formTile(item))));
     else panel.append(emptyShelf("clock", "Forms you open will show up here."));
     panel.append(actionGrid());
-    panel.append(dashboardsBlock());
     FORM_GROUPS.forEach((group) => {
       const items = group.titles.map(findForm).filter(Boolean);
       if (items.length) panel.append(groupBlock(group, items, formTile));
+      if (group.id === "listings") panel.append(dashboardsBlock());
     });
     panel.append(truthsBlock(state.data.boldTruths));
   }
@@ -514,8 +515,8 @@
     const label = sectionLabel("Quick actions");
     const grid = document.createElement("div");
     grid.className = "action-grid";
-    MOST_USED.forEach((title) => {
-      const item = findForm(title);
+    QUICK_ACTIONS.forEach((title) => {
+      const item = findQuickAction(title);
       if (!item || !openable(item.url)) return;
       const link = document.createElement("a");
       link.className = "action-tile";
@@ -526,14 +527,14 @@
       const name = document.createElement("p");
       name.className = "card-title";
       name.textContent = item.title;
-      link.append(glyph(itemIcon(item, "Form")), name);
+      link.append(glyph(item.icon || itemIcon(item, "Form")), name);
       if (item.help) {
         const help = document.createElement("p");
         help.className = "card-help";
         help.textContent = item.help;
         link.append(help);
       }
-      link.addEventListener("click", () => remember(item.url));
+      if (findForm(item.title)) link.addEventListener("click", () => remember(item.url));
       grid.append(link);
     });
     const wrap = document.createElement("div");
@@ -543,6 +544,10 @@
 
   function dashboardItems() {
     return Array.isArray(state.data.dashboards) ? state.data.dashboards : [];
+  }
+
+  function findQuickAction(title) {
+    return findForm(title) || dashboardItems().find((item) => item.title === title);
   }
 
   function dashboardsBlock() {
@@ -834,6 +839,7 @@
       "Mastermind Topic/Ideas": "Buyers",
       "Content Ideas!": "Ideas",
       "Quick Comps": "Market",
+      "Local Market": "Market",
       "TSC Bible (Vision & Core Values)": "Playbooks",
       "Lead Gen": "Megaphone",
       "Sellers": "Listings",
