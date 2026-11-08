@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#000000">
+    <meta name="description" content="The Sold Collective agent portal for forms, resources, and the BOLD Truths.">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="TSC Portal">
+    <title>TSC Agent Portal</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" href="icons/icon-192.png" type="image/png" sizes="192x192">
+    <link rel="icon" href="icons/icon-512.png" type="image/png" sizes="512x512">
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" sizes="180x180">
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <a class="skip" href="#panel">Skip to content</a>
+    <div class="app">
+      <header class="brand">
+        <img class="wordmark" src="assets/wordmark.png" width="1280" height="339" alt="The Sold Collective">
+        <h1>Agent Portal</h1>
+      </header>
+
+      <div class="install" id="install" hidden>
+        <p id="install-copy"></p>
+        <div class="install-actions">
+          <button type="button" id="install-go" hidden>Install app</button>
+          <button type="button" id="install-dismiss" class="ghost">Not now</button>
+        </div>
+      </div>
+
+      <div class="sticky">
+        <form id="search-form" class="search" role="search">
+          <label class="sr-only" for="q">Search the portal</label>
+          <input id="q" type="search" name="q" placeholder="Search forms" enterkeyhint="search" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+          <button type="button" id="clear" class="clear" hidden aria-label="Clear search">
+            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+              <path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+            </svg>
+          </button>
+        </form>
+        <div class="tabs" role="tablist" aria-label="Portal sections">
+          <button type="button" role="tab" id="tab-forms" data-tab="forms" aria-controls="panel" aria-selected="true">Forms</button>
+          <button type="button" role="tab" id="tab-resources" data-tab="resources" aria-controls="panel" aria-selected="false" tabindex="-1">Resources</button>
+          <button type="button" role="tab" id="tab-truths" data-tab="truths" aria-controls="panel" aria-selected="false" tabindex="-1">BOLD Truths</button>
+        </div>
+      </div>
+
+      <p class="meta" id="meta" aria-live="polite"></p>
+
+      <main id="panel" role="tabpanel" aria-labelledby="tab-forms" tabindex="0">
+        <p class="loading">Loading portal…</p>
+      </main>
+
+      <footer class="foot">
+        <button type="button" id="install-link">Add to Home Screen</button>
+        <p>Links open in a new tab.</p>
+      </footer>
+
+      <p class="status" id="status" hidden role="status">You’re offline. Saved pages stay on this device. Links open when you are back online.</p>
+    </div>
+    <script src="app.js"></script>
+  </body>
+</html>

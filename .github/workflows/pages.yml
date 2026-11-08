@@ -1,0 +1,91 @@
+# Publishes the static portal to GitHub Pages.
+# One-time setup: Settings → Pages → Build and deployment → Source → GitHub Actions.
+
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Check site files
+        run: |
+          python3 - << 'PY'
+          import json
+          from pathlib import Path
+
+          required = [
+              "index.html",
+              "styles.css",
+              "app.js",
+              "sw.js",
+              "manifest.json",
+              "data/portal.json",
+              "assets/wordmark.png",
+              "icons/icon-192.png",
+              "icons/icon-512.png",
+              "icons/maskable-192.png",
+              "icons/maskable-512.png",
+              "icons/apple-touch-icon.png",
+          ]
+          missing = [path for path in required if not Path(path).is_file()]
+          if missing:
+              raise SystemExit("Missing site files: " + ", ".join(missing))
+
+          data = json.loads(Path("data/portal.json").read_text())
+          for key in ("forms", "resources", "boldTruths"):
+              if not isinstance(data.get(key), list) or not data[key]:
+                  raise SystemExit("data/portal.json needs a non-empty " + key + " list")
+
+          manifest = json.loads(Path("manifest.json").read_text())
+          assert manifest["name"] == "TSC Agent Portal"
+          assert manifest["short_name"] == "TSC Portal"
+          assert manifest["display"] == "standalone"
+          assert manifest["start_url"] == "./"
+          print(
+              "site ok:",
+              len(data["forms"]),
+              "forms,",
+              len(data["resources"]),
+              "resources,",
+              len(data["boldTruths"]),
+              "truths",
+          )
+          PY
+
+      - name: Assemble site
+        run: |
+          mkdir -p _site
+          cp -a index.html styles.css app.js sw.js manifest.json .nojekyll data icons assets _site/
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
