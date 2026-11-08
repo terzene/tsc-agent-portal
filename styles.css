@@ -1,31 +1,60 @@
+@font-face {
+  font-family: "Inter";
+  src: url("assets/fonts/inter-400.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Inter";
+  src: url("assets/fonts/inter-700.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Inter";
+  src: url("assets/fonts/inter-800.woff2") format("woff2");
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   --red: #ca0516;
   --ink: #211f1f;
   --white: #ffffff;
-  --bg: #f3f0ee;
+  --bg: #ffffff;
   --surface: #ffffff;
-  --text: var(--ink);
-  --muted: #5e5957;
-  --line: rgba(33, 31, 31, 0.1);
-  --card-border: rgba(33, 31, 31, 0.06);
-  --shadow: 0 1px 2px rgba(33, 31, 31, 0.04), 0 10px 28px rgba(33, 31, 31, 0.07);
+  --text: #211f1f;
+  --muted: #5c5856;
+  --line: rgba(33, 31, 31, 0.12);
+  --card-border: rgba(33, 31, 31, 0.1);
+  --shadow: 0 1px 2px rgba(33, 31, 31, 0.05);
   --icon-bg: rgba(202, 5, 22, 0.1);
-  --feature: #fff7f7;
-  --pad: 16px;
+  --s1: 4px;
+  --s2: 8px;
+  --s3: 12px;
+  --s4: 16px;
+  --s5: 24px;
+  --s6: 32px;
+  --pad: var(--s4);
   --radius: 18px;
+  --display: "Inter", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   color-scheme: light;
 }
 
 :root[data-theme="dark"] {
-  --bg: #000000;
-  --surface: #211f1f;
+  --bg: #211f1f;
+  --surface: #2a2828;
   --text: #ffffff;
-  --muted: rgba(255, 255, 255, 0.68);
+  --muted: rgba(255, 255, 255, 0.7);
   --line: rgba(255, 255, 255, 0.12);
-  --card-border: rgba(255, 255, 255, 0.06);
-  --shadow: 0 1px 0 rgba(255, 255, 255, 0.04), 0 12px 32px rgba(0, 0, 0, 0.35);
-  --icon-bg: rgba(202, 5, 22, 0.2);
-  --feature: #2a1416;
+  --card-border: rgba(255, 255, 255, 0.08);
+  --shadow: none;
+  --icon-bg: rgba(202, 5, 22, 0.22);
   color-scheme: dark;
 }
 
@@ -42,7 +71,7 @@ body {
   min-height: 100%;
   background: var(--bg);
   color: var(--text);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-family: var(--display);
   font-size: 16px;
   line-height: 1.4;
   -webkit-font-smoothing: antialiased;
@@ -108,9 +137,9 @@ h2 {
 
 .wordmark {
   display: block;
-  width: min(68%, 230px);
+  width: min(58%, 200px);
   height: auto;
-  margin: 0 auto 12px;
+  margin: 0;
 }
 
 :root[data-theme="light"] .wordmark {
@@ -121,14 +150,218 @@ h2 {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--s3);
 }
 
-.brand h1 {
+.greet {
+  margin: var(--s3) 0 0;
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+
+.name-ask {
+  display: grid;
+  gap: var(--s2);
+  margin-top: var(--s3);
+  padding: var(--s3);
+  border: 1px solid var(--card-border);
+  border-radius: 16px;
+  background: var(--surface);
+}
+
+.name-ask label {
   font-size: 15px;
   font-weight: 700;
-  letter-spacing: 0.16em;
+}
+
+.name-ask input {
+  width: 100%;
+  min-height: 48px;
+  padding: 0 var(--s3);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--bg);
+  font-size: 16px;
+}
+
+.name-ask-actions {
+  display: flex;
+  gap: var(--s2);
+}
+
+.name-ask-actions button {
+  min-height: 44px;
+  padding: 0 var(--s4);
+  border: 0;
+  border-radius: 12px;
+  background: var(--red);
+  color: var(--white);
+  font-weight: 700;
+}
+
+.name-ask-actions .ghost {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--line);
+}
+
+.hero {
+  margin-top: var(--s4);
+  padding: var(--s5) var(--s4);
+  border-radius: 22px;
+  background: var(--red);
+  color: var(--white);
+}
+
+.hero .kicker {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
+}
+
+.hero .when {
+  margin-top: var(--s1);
+  font-size: 13px;
+  opacity: 0.9;
+}
+
+.hero .truth-text {
+  margin-top: var(--s3);
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+}
+
+.action-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--s3);
+  padding: 0 var(--pad);
+}
+
+.action-tile {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: var(--s3);
+  min-height: 148px;
+  aspect-ratio: 1;
+  padding: var(--s4);
+  border: 1px solid var(--card-border);
+  border-radius: 22px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  color: inherit;
+  text-decoration: none;
+}
+
+.action-tile .card-title {
+  font-size: 18px;
+}
+
+.action-tile .card-help {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  line-height: 1.3;
+}
+
+.card-help {
+  margin-top: var(--s1);
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0;
+  line-height: 1.35;
+}
+
+.empty-card {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  margin: 0 var(--pad);
+  padding: var(--s3) var(--s4);
+  border: 1px dashed var(--line);
+  border-radius: 16px;
+  color: var(--muted);
+}
+
+.empty-card p {
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.empty-art {
+  flex: 0 0 auto;
+  color: var(--red);
+}
+
+.help-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
+  margin: var(--s2) var(--pad) var(--s3);
+  border-radius: 16px;
+  background: var(--red);
+  color: var(--white);
+  font-size: 17px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.person {
+  margin: 0 var(--pad) var(--s3);
+  padding: var(--s4);
+  border: 1px solid var(--card-border);
+  border-radius: 22px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.person-name {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.person-role {
+  margin-top: var(--s1);
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.contact-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+  margin-top: var(--s3);
+}
+
+.contact-row a,
+.address-line {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  min-height: 44px;
+  padding: 0 var(--s3);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.address-line {
+  margin-top: var(--s2);
 }
 
 .brand-actions {
@@ -435,6 +668,18 @@ h2 {
   color: var(--red);
 }
 
+.glyph-sm {
+  width: 18px;
+  height: 18px;
+  border-radius: 0;
+  background: transparent;
+}
+
+.glyph-sm svg {
+  width: 18px;
+  height: 18px;
+}
+
 .card-copy {
   flex: 1;
   min-width: 0;
@@ -650,11 +895,11 @@ button:focus-visible,
 
 @media (min-width: 760px) {
   body {
-    background: #e6e1dd;
+    background: #eceae8;
   }
 
   :root[data-theme="dark"] body {
-    background: #0a0909;
+    background: #161414;
   }
 
   .app {

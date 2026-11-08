@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <meta name="theme-color" content="#f3f0ee">
+    <meta name="theme-color" content="#ffffff">
     <meta name="description" content="The Sold Collective agent portal for forms, resources, and the BOLD Truths.">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -19,7 +19,7 @@
             : (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
           document.documentElement.setAttribute("data-theme", theme);
           var meta = document.querySelector('meta[name="theme-color"]');
-          if (meta) meta.setAttribute("content", theme === "dark" ? "#000000" : "#f3f0ee");
+          if (meta) meta.setAttribute("content", theme === "dark" ? "#211F1F" : "#ffffff");
         } catch (error) {}
       })();
     </script>
@@ -33,9 +33,8 @@
     <a class="skip" href="#panel">Skip to content</a>
     <div class="app">
       <header class="brand">
-        <img class="wordmark" src="assets/wordmark.png" width="1280" height="339" alt="The Sold Collective">
         <div class="brand-row">
-          <h1>Agent Portal</h1>
+          <img class="wordmark" src="assets/wordmark.png" width="1280" height="339" alt="The Sold Collective">
           <div class="brand-actions">
             <button type="button" id="share" class="icon-btn" aria-label="Share this app">
               <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
@@ -54,6 +53,7 @@
             </button>
           </div>
         </div>
+        <div id="welcome"></div>
       </header>
 
       <div class="install" id="install" hidden>
@@ -105,6 +105,14 @@
             <path d="M3 7a1 1 0 0 1 1-1h5l2 2h9a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"></path>
           </svg>
           Resources
+        </button>
+        <button type="button" id="nav-team" data-view="team">
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
+            <circle cx="9" cy="7" r="3.2" fill="none" stroke="currentColor" stroke-width="1.8"></circle>
+            <path d="M22 21v-2a4 4 0 0 0-3-3.8M16 4.1a3.2 3.2 0 0 1 0 6.2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
+          </svg>
+          Team
         </button>
         <button type="button" id="nav-search" data-view="search">
           <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">

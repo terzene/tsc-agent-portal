@@ -6,7 +6,9 @@
   const PINS_KEY = "tsc-portal-pins";
   const RECENT_KEY = "tsc-portal-recent";
   const GROUPS_KEY = "tsc-portal-groups";
-  const VIEWS = ["home", "resources", "search"];
+  const NAME_KEY = "tsc-portal-name";
+  const NAME_ASKED_KEY = "tsc-portal-name-asked";
+  const VIEWS = ["home", "resources", "team", "search"];
   const RECENT_LIMIT = 4;
   const MOST_USED = [
     "Offer to Purchase",
@@ -87,6 +89,7 @@
   const shareButton = document.getElementById("share");
   const themeButton = document.getElementById("theme");
   const toast = document.getElementById("toast");
+  const welcome = document.getElementById("welcome");
 
   const state = {
     data: null,
@@ -194,6 +197,21 @@
 
     shareButton.addEventListener("click", shareApp);
     themeButton.addEventListener("click", toggleTheme);
+    welcome.addEventListener("submit", (event) => {
+      if (!event.target || event.target.id !== "name-form") return;
+      event.preventDefault();
+      const field = document.getElementById("first-name");
+      const value = field ? field.value.trim() : "";
+      if (!value) return;
+      storageSet(NAME_KEY, value.slice(0, 40));
+      storageSet(NAME_ASKED_KEY, "1");
+      render();
+    });
+    welcome.addEventListener("click", (event) => {
+      if (!event.target || event.target.id !== "name-skip") return;
+      storageSet(NAME_ASKED_KEY, "1");
+      render();
+    });
 
     window.addEventListener("beforeinstallprompt", (event) => {
       event.preventDefault();
@@ -223,7 +241,7 @@
       return "home";
     }
     state.scrollTruths = false;
-    if (id === "resources" || id === "search") return id;
+    if (id === "resources" || id === "search" || id === "team") return id;
     return "home";
   }
 
@@ -265,8 +283,9 @@
       if (selected) button.setAttribute("aria-current", "page");
       else button.removeAttribute("aria-current");
     });
-    if (sticky) sticky.hidden = state.view === "resources" && !state.query;
-    panel.setAttribute("aria-labelledby", "nav-" + (state.view === "resources" ? "resources" : current));
+    if (sticky) sticky.hidden = (state.view === "resources" || state.view === "team") && !state.query;
+    const labelled = state.view === "resources" || state.view === "team" ? state.view : current;
+    panel.setAttribute("aria-labelledby", "nav-" + labelled);
   }
 
   async function loadData(options) {
@@ -307,7 +326,9 @@
     if (!state.data) return;
     const query = state.query.trim();
     panel.replaceChildren();
-    if (state.view === "resources" && !query) renderResources();
+    renderWelcome();
+    if (state.view === "team" && !query) renderTeam();
+    else if (state.view === "resources" && !query) renderResources();
     else if (state.view === "search" || query) renderSearch(query);
     else renderHome();
     if (state.scrollTruths) {
@@ -322,18 +343,122 @@
     const pinned = forms.filter((item) => isPinned(item.url));
     const recent = recentForms().filter((item) => !isPinned(item.url));
     meta.textContent = "";
-    if (pinned.length) {
-      panel.append(sectionLabel("Pinned", String(pinned.length)), stack(pinned.map((item) => formTile(item))));
-    }
-    if (recent.length) {
-      panel.append(sectionLabel("Recent", String(recent.length)), stack(recent.map((item) => formTile(item))));
-    }
-    panel.append(mostUsedRow());
+    panel.append(sectionLabel("Pinned", pinned.length ? String(pinned.length) : ""));
+    if (pinned.length) panel.append(stack(pinned.map((item) => formTile(item))));
+    else panel.append(emptyShelf("pin", "Pin a form with the star and it stays on this phone."));
+    panel.append(sectionLabel("Recent", recent.length ? String(recent.length) : ""));
+    if (recent.length) panel.append(stack(recent.map((item) => formTile(item))));
+    else panel.append(emptyShelf("clock", "Forms you open will show up here."));
+    panel.append(actionGrid());
     FORM_GROUPS.forEach((group) => {
       const items = group.titles.map(findForm).filter(Boolean);
       if (items.length) panel.append(groupBlock(group, items, formTile));
     });
     panel.append(truthsBlock(state.data.boldTruths));
+  }
+
+  function renderWelcome() {
+    if (!welcome) return;
+    welcome.replaceChildren();
+    const show = state.view === "home" && state.data && !state.query.trim();
+    welcome.hidden = !show;
+    if (!show) return;
+    const greet = document.createElement("h1");
+    greet.className = "greet";
+    const name = (storageGet(NAME_KEY) || "").trim();
+    greet.textContent = greeting() + (name ? ", " + name : "");
+    welcome.append(greet);
+    if (!name && storageGet(NAME_ASKED_KEY) !== "1") welcome.append(namePrompt());
+    welcome.append(heroCard(state.data.boldTruths));
+  }
+
+  function greeting(date) {
+    const hour = (date || new Date()).getHours();
+    if (hour >= 5 && hour < 12) return "Good morning";
+    if (hour >= 12 && hour < 17) return "Good afternoon";
+    return "Good evening";
+  }
+
+  function namePrompt() {
+    const form = document.createElement("form");
+    form.id = "name-form";
+    form.className = "name-ask";
+    const label = document.createElement("label");
+    label.htmlFor = "first-name";
+    label.textContent = "What's your first name?";
+    const input = document.createElement("input");
+    input.id = "first-name";
+    input.name = "first-name";
+    input.type = "text";
+    input.maxLength = 40;
+    input.autocomplete = "given-name";
+    input.enterKeyHint = "done";
+    const actions = document.createElement("div");
+    actions.className = "name-ask-actions";
+    const save = document.createElement("button");
+    save.type = "submit";
+    save.textContent = "Save";
+    const skip = document.createElement("button");
+    skip.type = "button";
+    skip.id = "name-skip";
+    skip.className = "ghost";
+    skip.textContent = "Not now";
+    actions.append(save, skip);
+    form.append(label, input, actions);
+    return form;
+  }
+
+  function heroCard(truths) {
+    const index = dayIndex(truths.length);
+    const card = document.createElement("article");
+    card.className = "hero";
+    card.id = "truth-of-the-day";
+    const kicker = document.createElement("p");
+    kicker.className = "kicker";
+    kicker.textContent = "Truth of the day · " + String(index + 1).padStart(2, "0");
+    const when = document.createElement("p");
+    when.className = "when";
+    when.textContent = new Intl.DateTimeFormat("en-US", {
+      weekday: "long",
+      month: "long",
+      day: "numeric",
+    }).format(new Date());
+    const quote = document.createElement("p");
+    quote.className = "truth-text";
+    quote.textContent = truths[index];
+    card.append(kicker, when, quote);
+    return card;
+  }
+
+  function emptyShelf(kind, message) {
+    const row = document.createElement("div");
+    row.className = "empty-card";
+    row.append(emptyArt(kind));
+    const text = document.createElement("p");
+    text.textContent = message;
+    row.append(text);
+    return row;
+  }
+
+  function emptyArt(kind) {
+    const svg = svgEl();
+    svg.classList.add("empty-art");
+    svg.setAttribute("width", "36");
+    svg.setAttribute("height", "36");
+    const paths = kind === "pin"
+      ? ["M12 21s-6-4.4-6-9a6 6 0 1 1 12 0c0 4.6-6 9-6 9z", "M12 11.2a1.6 1.6 0 1 0 0-3.2 1.6 1.6 0 0 0 0 3.2z"]
+      : ["M12 7v5l3 2", "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z"];
+    paths.forEach((d) => {
+      const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      path.setAttribute("d", d);
+      path.setAttribute("fill", "none");
+      path.setAttribute("stroke", "currentColor");
+      path.setAttribute("stroke-width", "1.7");
+      path.setAttribute("stroke-linecap", "round");
+      path.setAttribute("stroke-linejoin", "round");
+      svg.append(path);
+    });
+    return svg;
   }
 
   function renderResources() {
@@ -378,15 +503,15 @@
     if (truths.length) panel.append(sectionLabel("BOLD Truths", String(truths.length)), stack(truths.map((item) => truthTile(item))));
   }
 
-  function mostUsedRow() {
-    const label = sectionLabel("Most used");
-    const row = document.createElement("div");
-    row.className = "quick-row";
+  function actionGrid() {
+    const label = sectionLabel("Quick actions");
+    const grid = document.createElement("div");
+    grid.className = "action-grid";
     MOST_USED.forEach((title) => {
       const item = findForm(title);
       if (!item || !openable(item.url)) return;
       const link = document.createElement("a");
-      link.className = "quick-card";
+      link.className = "action-tile";
       link.setAttribute("href", item.url);
       link.target = "_blank";
       link.rel = "noopener noreferrer";
@@ -394,13 +519,82 @@
       const name = document.createElement("p");
       name.className = "card-title";
       name.textContent = item.title;
-      link.append(glyph("Form"), name);
+      link.append(glyph(itemIcon(item, "Form")), name);
+      if (item.help) {
+        const help = document.createElement("p");
+        help.className = "card-help";
+        help.textContent = item.help;
+        link.append(help);
+      }
       link.addEventListener("click", () => remember(item.url));
-      row.append(link);
+      grid.append(link);
     });
     const wrap = document.createElement("div");
-    wrap.append(label, row);
+    wrap.append(label, grid);
     return wrap;
+  }
+
+  function renderTeam() {
+    meta.textContent = "";
+    const people = Array.isArray(state.data.team) ? state.data.team : [];
+    const helper = people.find((person) => String(person && person.email || "").trim().toLowerCase() === "tony@notcityliving.com");
+    if (helper) {
+      const help = document.createElement("a");
+      help.className = "help-btn";
+      help.href = "mailto:" + String(helper.email).trim();
+      help.textContent = "Need help?";
+      panel.append(help);
+    }
+    if (!people.length) {
+      const empty = document.createElement("p");
+      empty.className = "empty";
+      empty.textContent = "Team contacts are not in the portal data yet.";
+      panel.append(empty);
+      return;
+    }
+    people.forEach((person) => panel.append(personCard(person)));
+  }
+
+  function personCard(person) {
+    const card = document.createElement("article");
+    card.className = "person";
+    const name = document.createElement("h2");
+    name.className = "person-name";
+    name.textContent = person.name || "Team member";
+    card.append(name);
+    if (person.role) {
+      const role = document.createElement("p");
+      role.className = "person-role";
+      role.textContent = person.role;
+      card.append(role);
+    }
+    const row = document.createElement("div");
+    row.className = "contact-row";
+    if (digits(person.cell)) {
+      row.append(contactLink("tel:" + digits(person.cell), "Call " + person.cell, "Phone"));
+      row.append(contactLink("sms:" + digits(person.cell), "Text " + person.cell, "Text"));
+    }
+    if (person.email && String(person.email).includes("@")) row.append(contactLink("mailto:" + String(person.email).trim(), person.email, "Mail"));
+    if (row.childNodes.length) card.append(row);
+    if (String(person.address || "").trim()) {
+      const address = document.createElement("p");
+      address.className = "address-line";
+      address.append(miniGlyph("Listings"), document.createTextNode(person.address));
+      card.append(address);
+    }
+    return card;
+  }
+
+  function contactLink(href, label, iconName) {
+    const link = document.createElement("a");
+    link.href = href;
+    link.textContent = label;
+    link.prepend(miniGlyph(iconName));
+    return link;
+  }
+
+  function digits(value) {
+    return String(value || "").replace(/\D/g, "");
   }
 
   function groupBlock(group, items, makeTile) {
@@ -467,30 +661,12 @@
     wrap.id = "truths";
     wrap.setAttribute("aria-labelledby", "truths-heading");
     const featureIndex = dayIndex(truths.length);
-    const feature = document.createElement("article");
-    feature.className = "feature";
-    feature.id = "truth-of-the-day";
-    const kicker = document.createElement("p");
-    kicker.className = "kicker";
-    kicker.textContent = "Truth of the day · " + String(featureIndex + 1).padStart(2, "0");
-    const when = document.createElement("p");
-    when.className = "when";
-    when.textContent = new Intl.DateTimeFormat("en-US", {
-      weekday: "long",
-      month: "long",
-      day: "numeric",
-    }).format(new Date());
-    const quote = document.createElement("p");
-    quote.className = "truth-text";
-    quote.textContent = truths[featureIndex];
-    feature.append(kicker, when, quote);
-
     const heading = sectionLabel("BOLD Truths", String(truths.length));
     heading.id = "truths-heading";
     const list = stack(
       truths.map((text, index) => truthTile({ text, index })).filter((_, index) => index !== featureIndex)
     );
-    wrap.append(heading, feature, list);
+    wrap.append(heading, list);
     return wrap;
   }
 
@@ -516,7 +692,7 @@
   function formTile(item) {
     const tile = document.createElement("article");
     tile.className = "tile";
-    const link = linkCard(item, "Form");
+    const link = linkCard(item, "Form", itemIcon(item, "Form"));
     link.addEventListener("click", () => remember(item.url));
     const pin = document.createElement("button");
     pin.type = "button";
@@ -536,16 +712,17 @@
   function resourceTile(item) {
     const tile = document.createElement("article");
     tile.className = "tile";
-    tile.append(linkCard(item, linkKind(item.url)));
+    tile.append(linkCard(item, linkKind(item.url), itemIcon(item, linkKind(item.url))));
     return tile;
   }
 
-  function linkCard(item, kind) {
+  function linkCard(item, kind, iconName) {
     const title = item.title || "Untitled";
+    const iconKey = iconName || kind;
     if (!openable(item.url)) {
       const row = document.createElement("div");
       row.className = "tile-link";
-      row.append(glyph(kind), cardCopy(title, "Missing link"));
+      row.append(glyph(iconKey), cardCopy(title, "Missing link", item.help));
       return row;
     }
     const link = document.createElement("a");
@@ -554,7 +731,7 @@
     link.target = "_blank";
     link.rel = "noopener noreferrer";
     link.setAttribute("aria-label", title + ". Opens in a new tab.");
-    link.append(glyph(kind), cardCopy(title, kind), chevron());
+    link.append(glyph(iconKey), cardCopy(title, kind, item.help), chevron());
     return link;
   }
 
@@ -571,7 +748,7 @@
     return row;
   }
 
-  function cardCopy(title, kind) {
+  function cardCopy(title, kind, help) {
     const copy = document.createElement("div");
     copy.className = "card-copy";
     const heading = document.createElement("p");
@@ -581,13 +758,54 @@
     label.className = "card-kind";
     label.textContent = kind;
     copy.append(heading, label);
+    if (help) {
+      const note = document.createElement("p");
+      note.className = "card-help";
+      note.textContent = help;
+      copy.append(note);
+    }
     return copy;
+  }
+
+  function itemIcon(item, fallback) {
+    const icons = {
+      "BAA / CIS & Disclosures": "UserCheck",
+      "Offer to Purchase": "Handshake",
+      "NY Offer / NJ LOI": "FilePen",
+      "New Listing Paperwork": "Listings",
+      "Upload In Person Listing Paperwork": "Upload",
+      "Tenant Agency Agreement": "Rentals",
+      "Rental Application": "Clipboard",
+      "Lease Request": "FileText",
+      "Mastermind Topic/Ideas": "Buyers",
+      "Content Ideas!": "Ideas",
+      "Quick Comps": "Market",
+      "TSC Bible (Vision & Core Values)": "Playbooks",
+      "Lead Gen": "Megaphone",
+      "Sellers": "Listings",
+      "Buyers": "Buyers",
+      "Admin/Docs": "Folder",
+      "TSC Books/Pods": "Library",
+      "AI Prompt Home Price Eval": "Tag",
+      "AI Prompt Listing Appt Prep": "Calendar",
+      "Ways To Increase Conversion!": "Trend",
+      "Listing Intake Form (Fill In)": "Clipboard",
+      "AI Prompt Turns Notes Into Listing Intake Form": "Spark",
+      "TSC Local Market Stats": "Market",
+    };
+    return icons[item && item.title] || fallback;
   }
 
   function glyph(kind) {
     const wrap = document.createElement("span");
     wrap.className = "glyph";
     wrap.append(icon(kind));
+    return wrap;
+  }
+
+  function miniGlyph(kind) {
+    const wrap = glyph(kind);
+    wrap.classList.add("glyph-sm");
     return wrap;
   }
 
@@ -602,6 +820,22 @@
       Playbooks: ["M5 5.2A2.2 2.2 0 0 1 7.2 3H19v15.5H7.2A2.2 2.2 0 0 0 5 20.7z", "M5 5.2v15.5"],
       Tools: ["M8 3h8v4H8z", "M7 7h10v13a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1z", "M10 12h4", "M10 16h4"],
       Market: ["M4 19V5", "M4 19h16", "M8 15l3-4 3 2 5-7"],
+      UserCheck: ["M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2", "M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z", "M16 11l2 2 4-4"],
+      Handshake: ["M8 13l3 3 5-6", "M4 12l4-4 3 2 2-2 7 6", "M14 14l2 2 4-3"],
+      FilePen: ["M7 3h7l5 5v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z", "M14 3v5h5", "M9 16l6-4"],
+      Upload: ["M12 16V6", "M8 10l4-4 4 4", "M5 19h14"],
+      Clipboard: ["M9 4h6v3H9z", "M8 6H6v14h12V6h-2"],
+      FileText: ["M7 3h7l5 5v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z", "M14 3v5h5", "M9 13h6", "M9 17h4"],
+      Megaphone: ["M4 10v4a2 2 0 0 0 2 2h1l4 4V6L7 8H6a2 2 0 0 0-2 2z", "M14 9a4 4 0 0 1 0 6", "M17 7a7 7 0 0 1 0 10"],
+      Library: ["M4 5h5v14H4z", "M9 5h6v14H9z", "M15 7h5v12h-5z"],
+      Tag: ["M12 3H5v7l8 8 7-7z", "M8 8h.01"],
+      Calendar: ["M5 5h14v14H5z", "M5 9h14", "M8 3v4", "M16 3v4"],
+      Trend: ["M4 16l5-5 3 3 7-7", "M14 7h5v5"],
+      Spark: ["M12 3l1.2 4.2L17.5 8.5 13.2 9.8 12 14l-1.2-4.2L6.5 8.5l4.3-1.3z", "M18 14l.6 2 2 .6-2 .6-.6 2-.6-2-2-.6 2-.6z"],
+      Phone: ["M7 3h3l1.5 4-2 1.2a12 12 0 0 0 6.3 6.3L17 12.5 21 14v3a2 2 0 0 1-2.2 2A17 17 0 0 1 5 5.2 2 2 0 0 1 7 3z"],
+      Text: ["M5 6h14v9H8l-3 3z"],
+      Office: ["M5 21V5h9v16", "M14 9h5v12", "M8 9h3", "M8 13h3", "M8 17h3"],
+      Mail: ["M4 6h16v12H4z", "M4 7l8 6 8-6"],
       Folder: ["M3 7a1 1 0 0 1 1-1h5l2 2h9a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7z"],
       File: ["M7 3h7l5 5v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z", "M14 3v5h5"],
       Sheet: ["M5 4h14v16H5z", "M5 9h14M5 14h14M10 4v16"],
@@ -889,7 +1123,7 @@
   function applyTheme(theme) {
     document.documentElement.setAttribute("data-theme", theme);
     const themeMeta = document.querySelector('meta[name="theme-color"]');
-    if (themeMeta) themeMeta.setAttribute("content", theme === "dark" ? "#000000" : "#f3f0ee");
+    if (themeMeta) themeMeta.setAttribute("content", theme === "dark" ? "#211F1F" : "#ffffff");
     themeButton.setAttribute("aria-label", theme === "dark" ? "Switch to light mode" : "Switch to dark mode");
   }
 
