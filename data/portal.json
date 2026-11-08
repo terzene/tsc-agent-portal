@@ -141,16 +141,16 @@
     "#211F1F"
   ],
   "missingLinks": [],
-  "team": [
+  "helpEmail": "team@thesoldcollective.com",
+  "dashboards": [
     {
-      "name": "Tony Erzene",
-      "role": "",
-      "cell": "",
-      "office": "",
-      "email": "tony@notcityliving.com",
-      "address": "",
-      "todo": ""
-    },
+      "title": "Team Pipeline",
+      "url": "https://script.google.com/macros/s/AKfycbzooOR6pOWaOuxwcl--vcrHpL3R3URCcxSVBcZ_OMndILoP4SM9GXDfbLYuKhzgCoUD/exec",
+      "help": "Every active, pending and closed deal at a glance",
+      "icon": "Market"
+    }
+  ],
+  "team": [
     {
       "name": "Miranda Moore",
       "role": "Director of Operations",
