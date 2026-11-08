@@ -78,15 +78,11 @@
             </svg>
           </button>
         </form>
-        <div class="tabs" role="tablist" aria-label="Portal sections">
-          <button type="button" role="tab" id="tab-forms" data-tab="forms" aria-controls="panel" aria-selected="true">Forms</button>
-          <button type="button" role="tab" id="tab-resources" data-tab="resources" aria-controls="panel" aria-selected="false" tabindex="-1">Resources</button>
-        </div>
       </div>
 
       <p class="meta" id="meta" aria-live="polite"></p>
 
-      <main id="panel" role="tabpanel" aria-labelledby="tab-forms" tabindex="0">
+      <main id="panel" tabindex="0">
         <p class="loading">Loading portal…</p>
       </main>
 
@@ -96,6 +92,28 @@
       </footer>
 
       <p class="status" id="status" hidden role="status">You’re offline. This page is saved on your phone. Pull to refresh when you are back online.</p>
+
+      <nav class="dock" aria-label="Primary">
+        <button type="button" id="nav-home" data-view="home" aria-current="page">
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+            <path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"></path>
+          </svg>
+          Home
+        </button>
+        <button type="button" id="nav-resources" data-view="resources">
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+            <path d="M3 7a1 1 0 0 1 1-1h5l2 2h9a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"></path>
+          </svg>
+          Resources
+        </button>
+        <button type="button" id="nav-search" data-view="search">
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+            <circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="1.8"></circle>
+            <path d="M16 16l4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
+          </svg>
+          Search
+        </button>
+      </nav>
     </div>
     <p class="toast" id="toast" hidden role="status"></p>
     <script src="app.js"></script>

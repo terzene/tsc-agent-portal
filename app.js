@@ -5,15 +5,79 @@
   const THEME_KEY = "tsc-portal-theme";
   const PINS_KEY = "tsc-portal-pins";
   const RECENT_KEY = "tsc-portal-recent";
-  const TABS = ["forms", "resources"];
+  const GROUPS_KEY = "tsc-portal-groups";
+  const VIEWS = ["home", "resources", "search"];
   const RECENT_LIMIT = 4;
+  const MOST_USED = [
+    "Offer to Purchase",
+    "New Listing Paperwork",
+    "BAA / CIS & Disclosures",
+    "Quick Comps",
+  ];
+  const FORM_GROUPS = [
+    {
+      id: "buyers",
+      title: "Buyers",
+      icon: "Buyers",
+      titles: ["BAA / CIS & Disclosures", "Offer to Purchase", "NY Offer / NJ LOI"],
+    },
+    {
+      id: "listings",
+      title: "Listings",
+      icon: "Listings",
+      titles: ["New Listing Paperwork", "Upload In Person Listing Paperwork", "Quick Comps"],
+    },
+    {
+      id: "rentals",
+      title: "Rentals",
+      icon: "Rentals",
+      titles: ["Tenant Agency Agreement", "Rental Application", "Lease Request"],
+    },
+    {
+      id: "ideas",
+      title: "Team & Ideas",
+      icon: "Ideas",
+      titles: ["Mastermind Topic/Ideas", "Content Ideas!"],
+    },
+  ];
+  const RESOURCE_GROUPS = [
+    {
+      id: "start",
+      title: "Start Here",
+      icon: "Start",
+      titles: ["TSC Bible (Vision & Core Values)", "TSC Books/Pods"],
+    },
+    {
+      id: "playbooks",
+      title: "Playbooks",
+      icon: "Playbooks",
+      titles: ["Lead Gen", "Sellers", "Buyers", "Ways To Increase Conversion!", "Admin/Docs"],
+    },
+    {
+      id: "tools",
+      title: "Listing Tools",
+      icon: "Tools",
+      titles: [
+        "Listing Intake Form (Fill In)",
+        "AI Prompt Turns Notes Into Listing Intake Form",
+        "AI Prompt Listing Appt Prep",
+      ],
+    },
+    {
+      id: "market",
+      title: "Market & Pricing",
+      icon: "Market",
+      titles: ["AI Prompt Home Price Eval", "TSC Local Market Stats"],
+    },
+  ];
 
   const panel = document.getElementById("panel");
   const meta = document.getElementById("meta");
   const searchForm = document.getElementById("search-form");
   const searchInput = document.getElementById("q");
   const clearButton = document.getElementById("clear");
-  const tabButtons = Array.from(document.querySelectorAll("[data-tab]"));
+  const sticky = document.querySelector(".sticky");
+  const navButtons = Array.from(document.querySelectorAll("[data-view]"));
   const install = document.getElementById("install");
   const installCopy = document.getElementById("install-copy");
   const installGo = document.getElementById("install-go");
@@ -26,20 +90,21 @@
 
   const state = {
     data: null,
-    tab: "forms",
+    view: "home",
     query: "",
     scrollTruths: false,
+    focusSearch: false,
   };
 
   let deferredPrompt = null;
   let toastTimer = 0;
 
-  state.tab = tabFromHash();
+  state.view = viewFromHash();
   applyTheme(resolveTheme());
   registerServiceWorker();
   bind();
   syncOnline();
-  syncTabs();
+  syncNav();
   setupInstall();
   loadData();
 
@@ -62,6 +127,11 @@
     searchInput.addEventListener("input", () => {
       state.query = searchInput.value;
       clearButton.hidden = state.query.length === 0;
+      if (state.query && state.view !== "search") {
+        state.view = "search";
+        history.replaceState(null, "", "#search");
+      }
+      syncNav();
       render();
     });
 
@@ -70,24 +140,32 @@
       searchInput.value = "";
       clearButton.hidden = true;
       searchInput.focus();
+      syncNav();
       render();
     });
 
-    tabButtons.forEach((button, index) => {
-      button.addEventListener("click", () => selectTab(button.dataset.tab));
+    navButtons.forEach((button, index) => {
+      button.addEventListener("click", () => {
+        const view = button.dataset.view;
+        selectView(view, { focusSearch: view === "search" });
+      });
       button.addEventListener("keydown", (event) => {
-        const next = tabIndexFromKey(event.key, index);
+        const next = navIndexFromKey(event.key, index);
         if (next === null) return;
         event.preventDefault();
-        tabButtons[next].focus();
-        selectTab(tabButtons[next].dataset.tab);
+        navButtons[next].focus();
+        navButtons[next].click();
       });
     });
 
     window.addEventListener("hashchange", () => {
-      state.tab = tabFromHash();
-      syncTabs();
+      state.view = viewFromHash();
+      syncNav();
       render();
+      if (state.focusSearch) {
+        state.focusSearch = false;
+        searchInput.focus();
+      }
     });
 
     window.addEventListener("online", () => {
@@ -138,45 +216,57 @@
     }
   }
 
-  function tabFromHash() {
+  function viewFromHash() {
     const id = location.hash.replace("#", "");
     if (id === "truths") {
       state.scrollTruths = true;
-      return "forms";
+      return "home";
     }
     state.scrollTruths = false;
-    return TABS.includes(id) ? id : "forms";
+    if (id === "resources" || id === "search") return id;
+    return "home";
   }
 
-  function tabIndexFromKey(key, index) {
-    if (key === "ArrowRight") return (index + 1) % tabButtons.length;
-    if (key === "ArrowLeft") return (index - 1 + tabButtons.length) % tabButtons.length;
+  function navIndexFromKey(key, index) {
+    if (key === "ArrowRight") return (index + 1) % navButtons.length;
+    if (key === "ArrowLeft") return (index - 1 + navButtons.length) % navButtons.length;
     if (key === "Home") return 0;
-    if (key === "End") return tabButtons.length - 1;
+    if (key === "End") return navButtons.length - 1;
     return null;
   }
 
-  function selectTab(id) {
-    if (!TABS.includes(id)) return;
-    if (location.hash === "#" + id || (id === "forms" && (location.hash === "" || location.hash === "#truths"))) {
-      state.tab = id;
+  function selectView(id, options) {
+    if (!VIEWS.includes(id)) return;
+    if (id !== "search") {
+      state.query = "";
+      searchInput.value = "";
+      clearButton.hidden = true;
+    }
+    const hash = "#" + id;
+    const already = location.hash === hash || (id === "home" && (location.hash === "" || location.hash === "#forms" || location.hash === "#truths"));
+    if (already) {
+      state.view = id;
       state.scrollTruths = location.hash === "#truths";
-      syncTabs();
+      syncNav();
       render();
-      if (id !== "forms" || location.hash !== "#truths") window.scrollTo(0, 0);
+      if (!(options && options.keepScroll) && location.hash !== "#truths") window.scrollTo(0, 0);
+      if (options && options.focusSearch) searchInput.focus();
       return;
     }
+    if (options && options.focusSearch) state.focusSearch = true;
     location.hash = id;
-    window.scrollTo(0, 0);
+    if (!(options && options.keepScroll)) window.scrollTo(0, 0);
   }
 
-  function syncTabs() {
-    tabButtons.forEach((button) => {
-      const selected = button.dataset.tab === state.tab;
-      button.setAttribute("aria-selected", selected ? "true" : "false");
-      button.tabIndex = selected ? 0 : -1;
+  function syncNav() {
+    const current = state.query && state.view !== "resources" ? "search" : state.view;
+    navButtons.forEach((button) => {
+      const selected = button.dataset.view === current;
+      if (selected) button.setAttribute("aria-current", "page");
+      else button.removeAttribute("aria-current");
     });
-    panel.setAttribute("aria-labelledby", "tab-" + state.tab);
+    if (sticky) sticky.hidden = state.view === "resources" && !state.query;
+    panel.setAttribute("aria-labelledby", "nav-" + (state.view === "resources" ? "resources" : current));
   }
 
   async function loadData(options) {
@@ -192,7 +282,7 @@
       validateData(data);
       state.data = data;
       applyColors(data.siteColors);
-      syncTabs();
+      syncNav();
       render();
     } catch (error) {
       if (!state.data) showError();
@@ -217,13 +307,9 @@
     if (!state.data) return;
     const query = state.query.trim();
     panel.replaceChildren();
-    if (query) {
-      renderSearch(query);
-    } else if (state.tab === "resources") {
-      renderResourceList();
-    } else {
-      renderHome();
-    }
+    if (state.view === "resources" && !query) renderResources();
+    else if (state.view === "search" || query) renderSearch(query);
+    else renderHome();
     if (state.scrollTruths) {
       const truths = document.getElementById("truths");
       if (truths) truths.scrollIntoView({ block: "start" });
@@ -242,17 +328,31 @@
     if (recent.length) {
       panel.append(sectionLabel("Recent", String(recent.length)), stack(recent.map((item) => formTile(item))));
     }
-    panel.append(sectionLabel("Forms", String(forms.length)), stack(forms.map((item) => formTile(item))));
+    panel.append(mostUsedRow());
+    FORM_GROUPS.forEach((group) => {
+      const items = group.titles.map(findForm).filter(Boolean);
+      if (items.length) panel.append(groupBlock(group, items, formTile));
+    });
     panel.append(truthsBlock(state.data.boldTruths));
   }
 
-  function renderResourceList() {
-    const resources = state.data.resources.map((item, index) => ({ ...item, index }));
+  function renderResources() {
     meta.textContent = "";
-    panel.append(sectionLabel("Resources", String(resources.length)), stack(resources.map((item) => resourceTile(item))));
+    RESOURCE_GROUPS.forEach((group) => {
+      const items = group.titles.map(findResource).filter(Boolean);
+      if (items.length) panel.append(groupBlock(group, items, resourceTile));
+    });
   }
 
   function renderSearch(query) {
+    if (!query) {
+      meta.textContent = "";
+      const hint = document.createElement("p");
+      hint.className = "empty";
+      hint.textContent = "Search forms, resources, and BOLD Truths.";
+      panel.append(hint);
+      return;
+    }
     const needle = query.toLowerCase();
     const forms = formItems().filter((item) => item.title.toLowerCase().includes(needle));
     const resources = state.data.resources
@@ -276,6 +376,86 @@
     if (forms.length) panel.append(sectionLabel("Forms", String(forms.length)), stack(forms.map((item) => formTile(item))));
     if (resources.length) panel.append(sectionLabel("Resources", String(resources.length)), stack(resources.map((item) => resourceTile(item))));
     if (truths.length) panel.append(sectionLabel("BOLD Truths", String(truths.length)), stack(truths.map((item) => truthTile(item))));
+  }
+
+  function mostUsedRow() {
+    const label = sectionLabel("Most used");
+    const row = document.createElement("div");
+    row.className = "quick-row";
+    MOST_USED.forEach((title) => {
+      const item = findForm(title);
+      if (!item || !openable(item.url)) return;
+      const link = document.createElement("a");
+      link.className = "quick-card";
+      link.setAttribute("href", item.url);
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      link.setAttribute("aria-label", item.title + ". Opens in a new tab.");
+      const name = document.createElement("p");
+      name.className = "card-title";
+      name.textContent = item.title;
+      link.append(glyph("Form"), name);
+      link.addEventListener("click", () => remember(item.url));
+      row.append(link);
+    });
+    const wrap = document.createElement("div");
+    wrap.append(label, row);
+    return wrap;
+  }
+
+  function groupBlock(group, items, makeTile) {
+    const section = document.createElement("section");
+    section.className = "group";
+    const open = isGroupOpen(group.id);
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "group-toggle";
+    button.setAttribute("aria-expanded", open ? "true" : "false");
+    button.setAttribute("aria-controls", "group-" + group.id);
+    const title = document.createElement("span");
+    title.className = "group-title";
+    title.textContent = group.title;
+    const count = document.createElement("span");
+    count.className = "group-count";
+    count.textContent = String(items.length);
+    button.append(glyph(group.icon), title, count, twistIcon());
+    button.addEventListener("click", () => toggleGroup(group.id));
+    const body = document.createElement("div");
+    body.id = "group-" + group.id;
+    body.className = "stack group-body";
+    body.hidden = !open;
+    items.forEach((item) => body.append(makeTile(item)));
+    section.append(button, body);
+    return section;
+  }
+
+  function findForm(title) {
+    return formItems().find((item) => item.title === title);
+  }
+
+  function findResource(title) {
+    return state.data.resources.map((item, index) => ({ ...item, index })).find((item) => item.title === title);
+  }
+
+  function isGroupOpen(id) {
+    const saved = readMap(GROUPS_KEY);
+    return saved[id] !== false;
+  }
+
+  function toggleGroup(id) {
+    const saved = readMap(GROUPS_KEY);
+    saved[id] = !isGroupOpen(id);
+    storageSet(GROUPS_KEY, JSON.stringify(saved));
+    render();
+  }
+
+  function readMap(key) {
+    try {
+      const parsed = JSON.parse(storageGet(key) || "{}");
+      return parsed && typeof parsed === "object" ? parsed : {};
+    } catch (error) {
+      return {};
+    }
   }
 
   function formItems() {
@@ -414,6 +594,14 @@
   function icon(kind) {
     const paths = {
       Form: ["M7 3h7l5 5v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z", "M14 3v5h5", "M9 13h6M9 17h6"],
+      Buyers: ["M8 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z", "M16.5 10.5a2.4 2.4 0 1 0 0-4.8 2.4 2.4 0 0 0 0 4.8z", "M3.5 19c.4-2.4 2.4-4 5-4s4.6 1.6 5 4", "M14 15.2c1.8.2 3.4 1.3 3.8 3.8"],
+      Listings: ["M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1z"],
+      Rentals: ["M8.5 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z", "M11 11.2 16 16.2", "M14.2 14.4l1.6 1.6", "M16.2 16.4l1.4 1.4"],
+      Ideas: ["M9 18h6", "M10 21h4", "M12 3a6 6 0 0 0-3.2 11.1c.5.4 1.2 1.1 1.2 2h4c0-.9.7-1.6 1.2-2A6 6 0 0 0 12 3z"],
+      Start: ["M7 4h10a1 1 0 0 1 1 1v15l-6-3.2L6 20V5a1 1 0 0 1 1-1z"],
+      Playbooks: ["M5 5.2A2.2 2.2 0 0 1 7.2 3H19v15.5H7.2A2.2 2.2 0 0 0 5 20.7z", "M5 5.2v15.5"],
+      Tools: ["M8 3h8v4H8z", "M7 7h10v13a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1z", "M10 12h4", "M10 16h4"],
+      Market: ["M4 19V5", "M4 19h16", "M8 15l3-4 3 2 5-7"],
       Folder: ["M3 7a1 1 0 0 1 1-1h5l2 2h9a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7z"],
       File: ["M7 3h7l5 5v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z", "M14 3v5h5"],
       Sheet: ["M5 4h14v16H5z", "M5 9h14M5 14h14M10 4v16"],
@@ -457,6 +645,20 @@
     svg.setAttribute("width", "22");
     svg.setAttribute("height", "22");
     svg.setAttribute("aria-hidden", "true");
+    return svg;
+  }
+
+  function twistIcon() {
+    const svg = svgEl();
+    svg.classList.add("twist");
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    path.setAttribute("d", "M6 9l6 6 6-6");
+    path.setAttribute("fill", "none");
+    path.setAttribute("stroke", "currentColor");
+    path.setAttribute("stroke-width", "2");
+    path.setAttribute("stroke-linecap", "round");
+    path.setAttribute("stroke-linejoin", "round");
+    svg.append(path);
     return svg;
   }
 
