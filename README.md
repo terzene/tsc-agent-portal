@@ -25,9 +25,11 @@ iPhone only installs this app from Safari. Chrome on iPhone cannot add it to the
 
 ## Use the portal
 
-- **Home** starts with search, pins, and recent forms, then Most used, then forms in collapsible groups (Buyers, Listings, Rentals, Team & Ideas). The BOLD Truths, with a Truth of the day, sit under the groups.
+- **Home** opens with a greeting and the Truth of the day, then search, pins, recent forms, four quick actions, and the form groups. The rest of the BOLD Truths sit under the groups.
 - **Resources** groups the library into Start Here, Playbooks, Listing Tools, and Market & Pricing.
+- **Team** lists Tony Erzene, Miranda Moore, and Keisha Dickerson. Tony’s card is email only. Miranda and Keisha have call, text, and email.
 - **Search** in the bottom bar looks across forms, resources, and BOLD Truths.
+- The first visit can save a first name on this phone. It is not sent anywhere.
 - Pin a form with the star. Pins and the last few forms you opened stay on this phone.
 - The sun and moon button switches light and dark. Share sends the portal link.
 - Form and resource buttons open the original link in a new tab (Safari on iPhone, Chrome on Android).
