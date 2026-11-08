@@ -25,11 +25,14 @@ iPhone only installs this app from Safari. Chrome on iPhone cannot add it to the
 
 ## Use the portal
 
-- **Forms**, **Resources**, and **BOLD Truths** are the three tabs.
-- Search filters the tab you are on.
+- **Forms** is the home screen. The form list is on top, and the BOLD Truths sit directly underneath, with a Truth of the day at the top of that section.
+- **Resources** is the other tab.
+- Search looks across forms, resources, and BOLD Truths at once.
+- Pin a form with the star. Pins and the last few forms you opened stay on this phone.
+- The sun and moon button switches light and dark. Share sends the portal link.
 - Form and resource buttons open the original link in a new tab (Safari on iPhone, Chrome on Android).
 - BOLD Truths stay in the app. They are statements, not links.
-- After one online visit, the app shell (the page, the list, and the icons) opens with no connection. Opening a form or file still needs the network.
+- After one online visit, the app shell opens with no connection. Pull to refresh when you are back online. Opening a form or file still needs the network.
 
 ## Edit links
 
