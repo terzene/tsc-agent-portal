@@ -26,7 +26,7 @@
   --red: #ca0516;
   --ink: #211f1f;
   --white: #ffffff;
-  --bg: #fff6f4;
+  --bg: #ffffff;
   --surface: #ffffff;
   --text: #211f1f;
   --muted: #5c5856;
@@ -240,7 +240,7 @@ h2 {
   margin: var(--s5) var(--pad) var(--s4);
   padding: var(--s5) var(--s4);
   border-radius: 22px;
-  background: #312e81;
+  background: #211f1f;
   color: #fff;
 }
 
@@ -270,8 +270,8 @@ h2 {
 }
 
 :root[data-theme="dark"] .stoic {
-  background: #1e1b4b;
-  border: 1px solid rgba(165, 180, 252, 0.35);
+  background: #161414;
+  border: 1px solid rgba(255, 255, 255, 0.14);
 }
 
 .action-grid {
@@ -288,9 +288,10 @@ h2 {
   gap: var(--s3);
   min-height: 168px;
   padding: var(--s4);
-  border: 1px solid color-mix(in srgb, var(--tone, var(--red)) 28%, transparent);
+  border: 1px solid var(--card-border);
+  border-left: 3px solid var(--tone, var(--red));
   border-radius: 22px;
-  background: var(--tone-tint, var(--surface));
+  background: var(--surface);
   box-shadow: var(--shadow);
   color: var(--text);
   text-decoration: none;
@@ -298,11 +299,12 @@ h2 {
 
 .action-placeholder {
   border-style: dashed;
+  border-left-style: solid;
   cursor: default;
 }
 
 .placeholder-flag {
-  color: var(--tone, #b45309);
+  color: var(--red);
   font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.08em;
@@ -369,9 +371,10 @@ h2 {
 .person {
   margin: 0 var(--pad) var(--s3);
   padding: var(--s4);
-  border: 1px solid color-mix(in srgb, var(--tone, var(--red)) 24%, transparent);
+  border: 1px solid var(--card-border);
+  border-left: 3px solid var(--tone, var(--red));
   border-radius: 22px;
-  background: var(--tone-tint, var(--surface));
+  background: var(--surface);
   box-shadow: var(--shadow);
 }
 
@@ -579,13 +582,14 @@ h2 {
   margin: 14px var(--pad) 8px;
   padding: 6px 8px 6px 6px;
   border: 0;
+  border-left: 3px solid var(--tone, transparent);
   border-radius: 16px;
-  background: var(--tone-tint, transparent);
+  background: transparent;
   text-align: left;
 }
 
 .group-title {
-  color: var(--tone, var(--text));
+  color: var(--text);
   font-size: 17px;
   font-weight: 800;
   letter-spacing: -0.02em;
@@ -684,7 +688,7 @@ h2 {
 }
 
 .section-label .glyph {
-  color: #fff;
+  color: var(--red);
 }
 
 .section-with-icon .glyph {
@@ -715,9 +719,10 @@ h2 {
   gap: var(--s3);
   min-height: 104px;
   padding: var(--s4);
-  border: 1px solid color-mix(in srgb, var(--tone, var(--red)) 28%, transparent);
+  border: 1px solid var(--card-border);
+  border-left: 3px solid var(--tone, var(--red));
   border-radius: 22px;
-  background: var(--tone-tint, var(--surface));
+  background: var(--surface);
   box-shadow: var(--shadow);
   color: var(--text);
   text-decoration: none;
@@ -738,8 +743,9 @@ h2 {
   display: flex;
   align-items: stretch;
   min-height: 84px;
-  background: var(--tone-tint, var(--surface));
-  border: 1px solid color-mix(in srgb, var(--tone, var(--red)) 24%, transparent);
+  background: var(--surface);
+  border: 1px solid var(--card-border);
+  border-left: 3px solid var(--tone, var(--red));
   border-radius: var(--radius);
   box-shadow: var(--shadow);
 }
@@ -767,8 +773,8 @@ h2 {
   width: 44px;
   height: 44px;
   border-radius: 14px;
-  background: var(--tone, var(--red));
-  color: #fff;
+  background: var(--icon-bg);
+  color: var(--red);
 }
 
 .glyph-sm {
@@ -812,7 +818,7 @@ h2 {
 .chevron {
   flex: 0 0 auto;
   margin-right: 4px;
-  color: var(--tone, var(--red));
+  color: var(--red);
 }
 
 .pin {
@@ -966,27 +972,9 @@ button:focus-visible,
 :root[data-theme="dark"] .action-tile,
 :root[data-theme="dark"] .dash-tile,
 :root[data-theme="dark"] .person,
-:root[data-theme="dark"] .truth {
-  background: var(--tone-dark, var(--surface));
-  border-color: color-mix(in srgb, var(--tone-bright, #fff) 32%, transparent);
-  color: #fff;
-}
-
+:root[data-theme="dark"] .truth,
 :root[data-theme="dark"] .group-toggle {
-  color: #fff;
-}
-
-:root[data-theme="dark"] .group-title,
-:root[data-theme="dark"] .chevron,
-:root[data-theme="dark"] .placeholder-flag {
-  color: var(--tone-bright, #fda4af);
-}
-
-:root[data-theme="dark"] .card-help,
-:root[data-theme="dark"] .card-kind,
-:root[data-theme="dark"] .group-count,
-:root[data-theme="dark"] .person-role {
-  color: rgba(255, 255, 255, 0.82);
+  border-left-color: var(--tone-bright, var(--red));
 }
 
 @media (hover: hover) and (pointer: fine) {
