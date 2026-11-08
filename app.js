@@ -10,12 +10,25 @@
   const NAME_ASKED_KEY = "tsc-portal-name-asked";
   const VIEWS = ["home", "resources", "team", "search"];
   const RECENT_LIMIT = 4;
+  const TONES = {
+    buyers: { ink: "#9F1239", bright: "#FDA4AF", tint: "#FFF1F2", dark: "#3F121C" },
+    listings: { ink: "#B42318", bright: "#FF8A80", tint: "#FEF3F2", dark: "#3D1512" },
+    rentals: { ink: "#B45309", bright: "#FBBF24", tint: "#FFF7ED", dark: "#3B2410" },
+    ideas: { ink: "#6D28D9", bright: "#C4B5FD", tint: "#F5F3FF", dark: "#2A1848" },
+    start: { ink: "#9D174D", bright: "#F9A8D4", tint: "#FDF2F8", dark: "#3B1024" },
+    playbooks: { ink: "#047857", bright: "#6EE7B7", tint: "#ECFDF5", dark: "#0C2E24" },
+    tools: { ink: "#1D4ED8", bright: "#93C5FD", tint: "#EFF6FF", dark: "#142848" },
+    market: { ink: "#0F766E", bright: "#5EEAD4", tint: "#F0FDFA", dark: "#0C2C2A" },
+    dash: { ink: "#4338CA", bright: "#A5B4FC", tint: "#EEF2FF", dark: "#1E1B4B" },
+  };
   const QUICK_ACTIONS = [
-    "Offer to Purchase",
-    "BAA / CIS & Disclosures",
-    "Local Market",
-    "New Listing Paperwork",
-    "Quick Comps",
+    { label: "Offer to Purchase", title: "Offer to Purchase", tone: "listings" },
+    { label: "BAA / CIS & Disclosures", title: "BAA / CIS & Disclosures", tone: "buyers" },
+    { label: "Home Eval", placeholder: true, tone: "rentals" },
+    { label: "Appt Prep", title: "AI Prompt Listing Appt Prep", tone: "tools" },
+    { label: "Local Market", title: "Local Market", tone: "market" },
+    { label: "New Listing Paperwork", title: "New Listing Paperwork", tone: "listings" },
+    { label: "Quick Comps", title: "Quick Comps", tone: "playbooks" },
   ];
   const FORM_GROUPS = [
     {
@@ -361,6 +374,8 @@
       if (items.length) panel.append(groupBlock(group, items, formTile));
       if (group.id === "listings") panel.append(dashboardsBlock());
     });
+    const stoic = stoicCard(state.quotes);
+    if (stoic) panel.append(stoic);
   }
 
   function renderWelcome() {
@@ -376,8 +391,6 @@
     welcome.append(greet);
     if (!name && storageGet(NAME_ASKED_KEY) !== "1") welcome.append(namePrompt());
     welcome.append(heroCard(state.data.boldTruths));
-    const stoic = stoicCard(state.quotes);
-    if (stoic) welcome.append(stoic);
   }
 
   function greeting(date) {
@@ -541,18 +554,24 @@
     const label = sectionLabel("Quick actions");
     const grid = document.createElement("div");
     grid.className = "action-grid";
-    QUICK_ACTIONS.forEach((title) => {
-      const item = findQuickAction(title);
+    QUICK_ACTIONS.forEach((spec) => {
+      if (spec.placeholder) {
+        grid.append(placeholderTile(spec));
+        return;
+      }
+      const item = findQuickAction(spec.title);
       if (!item || !openable(item.url)) return;
       const link = document.createElement("a");
       link.className = "action-tile";
       link.setAttribute("href", item.url);
       link.target = "_blank";
       link.rel = "noopener noreferrer";
-      link.setAttribute("aria-label", item.title + ". Opens in a new tab.");
+      const labelText = spec.label || item.title;
+      link.setAttribute("aria-label", labelText + ". Opens in a new tab.");
+      applyTone(link, TONES[spec.tone] || toneForTitle(item.title));
       const name = document.createElement("p");
       name.className = "card-title";
-      name.textContent = item.title;
+      name.textContent = labelText;
       link.append(glyph(item.icon || itemIcon(item, "Form")), name);
       if (item.help) {
         const help = document.createElement("p");
@@ -568,12 +587,31 @@
     return wrap;
   }
 
+  function placeholderTile(spec) {
+    const tile = document.createElement("div");
+    tile.className = "action-tile action-placeholder";
+    tile.setAttribute("role", "group");
+    tile.setAttribute("aria-label", spec.label + ". Placeholder. No link yet.");
+    applyTone(tile, TONES[spec.tone] || TONES.rentals);
+    const badge = document.createElement("p");
+    badge.className = "placeholder-flag";
+    badge.textContent = "Placeholder";
+    const name = document.createElement("p");
+    name.className = "card-title";
+    name.textContent = spec.label;
+    const help = document.createElement("p");
+    help.className = "card-help";
+    help.textContent = "No link yet";
+    tile.append(glyph("Tag"), badge, name, help);
+    return tile;
+  }
+
   function dashboardItems() {
     return Array.isArray(state.data.dashboards) ? state.data.dashboards : [];
   }
 
   function findQuickAction(title) {
-    return findForm(title) || dashboardItems().find((item) => item.title === title);
+    return findForm(title) || findResource(title) || dashboardItems().find((item) => item.title === title);
   }
 
   function dashboardsBlock() {
@@ -581,6 +619,7 @@
     if (!items.length) return document.createDocumentFragment();
     const wrap = document.createElement("section");
     wrap.id = "dashboards";
+    applyTone(wrap, TONES.dash);
     const heading = document.createElement("h2");
     heading.className = "section-label";
     const title = document.createElement("span");
@@ -615,6 +654,7 @@
       help.textContent = item.help;
       copy.append(help);
     }
+    applyTone(link, item.title === "Local Market" ? TONES.market : TONES.dash);
     link.append(glyph(item.icon || "Market"), copy, chevron());
     return link;
   }
@@ -637,12 +677,13 @@
       panel.append(empty);
       return;
     }
-    people.forEach((person) => panel.append(personCard(person)));
+    people.forEach((person, index) => panel.append(personCard(person, index)));
   }
 
-  function personCard(person) {
+  function personCard(person, index) {
     const card = document.createElement("article");
     card.className = "person";
+    applyTone(card, index % 2 ? TONES.tools : TONES.start);
     const name = document.createElement("h2");
     name.className = "person-name";
     name.textContent = person.name || "Team member";
@@ -685,6 +726,7 @@
   function groupBlock(group, items, makeTile) {
     const section = document.createElement("section");
     section.className = "group";
+    applyTone(section, TONES[group.id] || TONES.listings);
     const open = isGroupOpen(group.id);
     const button = document.createElement("button");
     button.type = "button";
@@ -777,6 +819,7 @@
   function formTile(item) {
     const tile = document.createElement("article");
     tile.className = "tile";
+    applyTone(tile, toneForTitle(item.title));
     const link = linkCard(item, "Form", itemIcon(item, "Form"));
     link.addEventListener("click", () => remember(item.url));
     const pin = document.createElement("button");
@@ -797,6 +840,7 @@
   function resourceTile(item) {
     const tile = document.createElement("article");
     tile.className = "tile";
+    applyTone(tile, toneForTitle(item.title));
     tile.append(linkCard(item, linkKind(item.url), itemIcon(item, linkKind(item.url))));
     return tile;
   }
@@ -823,6 +867,7 @@
   function truthTile(entry) {
     const row = document.createElement("article");
     row.className = "tile truth";
+    applyTone(row, TONES.buyers);
     const number = document.createElement("span");
     number.className = "truth-num";
     number.textContent = String(entry.index + 1).padStart(2, "0");
@@ -850,6 +895,22 @@
       copy.append(note);
     }
     return copy;
+  }
+
+  function toneForTitle(title) {
+    const group = FORM_GROUPS.concat(RESOURCE_GROUPS).find((item) => item.titles.includes(title));
+    if (group && TONES[group.id]) return TONES[group.id];
+    if (title === "Team Pipeline" || title === "Local Market") return TONES.dash;
+    return TONES.listings;
+  }
+
+  function applyTone(el, tone) {
+    if (!el || !tone) return el;
+    el.style.setProperty("--tone", tone.ink);
+    el.style.setProperty("--tone-bright", tone.bright);
+    el.style.setProperty("--tone-tint", tone.tint);
+    el.style.setProperty("--tone-dark", tone.dark);
+    return el;
   }
 
   function itemIcon(item, fallback) {
