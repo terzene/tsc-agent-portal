@@ -350,6 +350,7 @@
     if (recent.length) panel.append(stack(recent.map((item) => formTile(item))));
     else panel.append(emptyShelf("clock", "Forms you open will show up here."));
     panel.append(actionGrid());
+    panel.append(dashboardsBlock());
     FORM_GROUPS.forEach((group) => {
       const items = group.titles.map(findForm).filter(Boolean);
       if (items.length) panel.append(groupBlock(group, items, formTile));
@@ -489,7 +490,12 @@
     const truths = state.data.boldTruths
       .map((text, index) => ({ text, index }))
       .filter((item) => item.text.toLowerCase().includes(needle));
-    const total = forms.length + resources.length + truths.length;
+    const dashboards = dashboardItems().filter((item) => {
+      const title = String(item.title || "").toLowerCase();
+      const help = String(item.help || "").toLowerCase();
+      return title.includes(needle) || help.includes(needle);
+    });
+    const total = forms.length + resources.length + truths.length + dashboards.length;
     meta.textContent = total + (total === 1 ? " match" : " matches");
     if (!total) {
       const empty = document.createElement("p");
@@ -498,6 +504,7 @@
       panel.append(empty);
       return;
     }
+    if (dashboards.length) panel.append(sectionLabel("Dashboards", String(dashboards.length)), stack(dashboards.map((item) => dashboardTile(item))));
     if (forms.length) panel.append(sectionLabel("Forms", String(forms.length)), stack(forms.map((item) => formTile(item))));
     if (resources.length) panel.append(sectionLabel("Resources", String(resources.length)), stack(resources.map((item) => resourceTile(item))));
     if (truths.length) panel.append(sectionLabel("BOLD Truths", String(truths.length)), stack(truths.map((item) => truthTile(item))));
@@ -532,6 +539,53 @@
     const wrap = document.createElement("div");
     wrap.append(label, grid);
     return wrap;
+  }
+
+  function dashboardItems() {
+    return Array.isArray(state.data.dashboards) ? state.data.dashboards : [];
+  }
+
+  function dashboardsBlock() {
+    const items = dashboardItems().filter((item) => item && openable(item.url));
+    if (!items.length) return document.createDocumentFragment();
+    const wrap = document.createElement("section");
+    wrap.id = "dashboards";
+    const heading = document.createElement("h2");
+    heading.className = "section-label";
+    const title = document.createElement("span");
+    title.className = "section-with-icon";
+    title.append(glyph("Market"), document.createTextNode("Dashboards"));
+    const count = document.createElement("span");
+    count.textContent = String(items.length);
+    heading.append(title, count);
+    const list = document.createElement("div");
+    list.className = "dash-list";
+    items.forEach((item) => list.append(dashboardTile(item)));
+    wrap.append(heading, list);
+    return wrap;
+  }
+
+  function dashboardTile(item) {
+    const link = document.createElement("a");
+    link.className = "dash-tile";
+    link.setAttribute("href", item.url);
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.setAttribute("aria-label", item.title + ". Opens in a new tab.");
+    const copy = document.createElement("div");
+    copy.className = "card-copy";
+    const name = document.createElement("p");
+    name.className = "card-title";
+    name.textContent = item.title;
+    copy.append(name);
+    if (item.help) {
+      const help = document.createElement("p");
+      help.className = "card-help";
+      help.textContent = item.help;
+      copy.append(help);
+    }
+    link.append(glyph(item.icon || "Market"), copy, chevron());
+    return link;
   }
 
   function renderTeam() {
@@ -820,6 +874,7 @@
       Playbooks: ["M5 5.2A2.2 2.2 0 0 1 7.2 3H19v15.5H7.2A2.2 2.2 0 0 0 5 20.7z", "M5 5.2v15.5"],
       Tools: ["M8 3h8v4H8z", "M7 7h10v13a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1z", "M10 12h4", "M10 16h4"],
       Market: ["M4 19V5", "M4 19h16", "M8 15l3-4 3 2 5-7"],
+      Gauge: ["M6 16a6 6 0 1 1 12 0", "M12 16l3.2-4.2", "M12 16h.01", "M5 19h14"],
       UserCheck: ["M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2", "M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z", "M16 11l2 2 4-4"],
       Handshake: ["M8 13l3 3 5-6", "M4 12l4-4 3 2 2-2 7 6", "M14 14l2 2 4-3"],
       FilePen: ["M7 3h7l5 5v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z", "M14 3v5h5", "M9 16l6-4"],

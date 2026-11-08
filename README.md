@@ -25,7 +25,7 @@ iPhone only installs this app from Safari. Chrome on iPhone cannot add it to the
 
 ## Use the portal
 
-- **Home** opens with a greeting and the Truth of the day, then search, pins, recent forms, four quick actions, and the form groups. The rest of the BOLD Truths sit under the groups.
+- **Home** opens with a greeting and the Truth of the day, then search, pins, recent forms, four quick actions, Dashboards, and the form groups. The rest of the BOLD Truths sit under the groups.
 - **Resources** groups the library into Start Here, Playbooks, Listing Tools, and Market & Pricing.
 - **Team** lists Miranda Moore and Keisha Dickerson, with call, text, and email. Need help? emails team@thesoldcollective.com.
 - **Search** in the bottom bar looks across forms, resources, and BOLD Truths.

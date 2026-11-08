@@ -142,6 +142,20 @@
   ],
   "missingLinks": [],
   "helpEmail": "team@thesoldcollective.com",
+  "dashboards": [
+    {
+      "title": "Team Pipeline",
+      "url": "https://script.google.com/macros/s/AKfycbzooOR6pOWaOuxwcl--vcrHpL3R3URCcxSVBcZ_OMndILoP4SM9GXDfbLYuKhzgCoUD/exec",
+      "help": "Every active, pending and closed deal at a glance",
+      "icon": "Market"
+    },
+    {
+      "title": "My Growth (Performance)",
+      "url": "https://script.google.com/a/macros/notcityliving.com/s/AKfycby6AEM3jxUvMWahbg1aby0igKJs_GU_3lW5TU_c-XVuLpWpMzCRWJH3MZaavfk7ugoT/exec",
+      "help": "Your gain, gap and pace vs goal",
+      "icon": "Gauge"
+    }
+  ],
   "team": [
     {
       "name": "Miranda Moore",
