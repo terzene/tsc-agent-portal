@@ -25,7 +25,7 @@ iPhone only installs this app from Safari. Chrome on iPhone cannot add it to the
 
 ## Use the portal
 
-- **Home** opens with a greeting, the Bold Truth of the day, and a Stoic quote of the day. Both rotate by the day of the year in America/New_York, so every agent sees the same pair. Search, pins, recent forms, and a two-column quick grid follow. Dashboards (Team Pipeline and Local Market) sit under the Buyers and Listings groups.
+- **Home** opens with a greeting and the Bold Truth of the day. The Stoic quote of the day sits at the bottom of the page. Both rotate by the day of the year in America/New_York, so every agent sees the same pair. Search, pins, recent forms, and a two-column quick grid follow. Quick actions include Appt Prep, which opens the listing appointment prompt. Home Eval is a placeholder until a real link exists. Dashboards (Team Pipeline and Local Market) sit under the Buyers and Listings groups.
 - **Resources** groups the library into Start Here, Playbooks, Listing Tools, and Market & Pricing.
 - **Team** lists Miranda Moore and Keisha Dickerson, with call, text, and email. Need help? emails team@thesoldcollective.com.
 - **Search** in the bottom bar looks across forms, resources, and BOLD Truths. The full list is no longer on Home; search still finds every truth.
