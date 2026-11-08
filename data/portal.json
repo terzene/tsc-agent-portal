@@ -148,6 +148,12 @@
       "url": "https://script.google.com/macros/s/AKfycbzooOR6pOWaOuxwcl--vcrHpL3R3URCcxSVBcZ_OMndILoP4SM9GXDfbLYuKhzgCoUD/exec",
       "help": "Every active, pending and closed deal at a glance",
       "icon": "Market"
+    },
+    {
+      "title": "Local Market",
+      "url": "https://script.google.com/macros/s/AKfycbyBSqcmwO_hN4J7qzZjzms81hBFsk_2VvsjNCf-_GHtHHz7S5RVQCdoZfimLIJHNUoJmQ/exec",
+      "help": "Latest county stats to share with clients",
+      "icon": "Market"
     }
   ],
   "team": [
