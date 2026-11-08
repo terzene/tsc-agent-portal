@@ -25,10 +25,10 @@ iPhone only installs this app from Safari. Chrome on iPhone cannot add it to the
 
 ## Use the portal
 
-- **Home** opens with a greeting and the Truth of the day, then search, pins, recent forms, and a two-column quick grid. Dashboards (Team Pipeline and Local Market) sit under the Buyers and Listings groups. The rest of the BOLD Truths follow the groups.
+- **Home** opens with a greeting, the Bold Truth of the day, and a Stoic quote of the day. Both rotate by the day of the year in America/New_York, so every agent sees the same pair. Search, pins, recent forms, and a two-column quick grid follow. Dashboards (Team Pipeline and Local Market) sit under the Buyers and Listings groups.
 - **Resources** groups the library into Start Here, Playbooks, Listing Tools, and Market & Pricing.
 - **Team** lists Miranda Moore and Keisha Dickerson, with call, text, and email. Need help? emails team@thesoldcollective.com.
-- **Search** in the bottom bar looks across forms, resources, and BOLD Truths.
+- **Search** in the bottom bar looks across forms, resources, and BOLD Truths. The full list is no longer on Home; search still finds every truth.
 - The first visit can save a first name on this phone. It is not sent anywhere.
 - Pin a form with the star. Pins and the last few forms you opened stay on this phone.
 - The sun and moon button switches light and dark. Share sends the portal link.
@@ -38,7 +38,7 @@ iPhone only installs this app from Safari. Chrome on iPhone cannot add it to the
 
 ## Edit links
 
-All links and the BOLD Truths live in one file: [`data/portal.json`](data/portal.json).
+All links and the BOLD Truths live in [`data/portal.json`](data/portal.json). The Stoic quotes live in [`data/stoic-quotes.json`](data/stoic-quotes.json).
 
 1. Edit that file.
 2. Commit to `main` and push.

@@ -94,6 +94,7 @@
 
   const state = {
     data: null,
+    quotes: [],
     view: "home",
     query: "",
     scrollTruths: false,
@@ -296,11 +297,15 @@
       panel.replaceChildren(loadingNode());
     }
     try {
-      const response = await fetch("data/portal.json", { cache: "no-cache" });
+      const [response, quoteResponse] = await Promise.all([
+        fetch("data/portal.json", { cache: "no-cache" }),
+        fetch("data/stoic-quotes.json", { cache: "no-cache" }),
+      ]);
       if (!response.ok) throw new Error("Could not load portal data");
       const data = await response.json();
       validateData(data);
       state.data = data;
+      state.quotes = quoteResponse.ok ? validQuotes(await quoteResponse.json()) : [];
       applyColors(data.siteColors);
       syncNav();
       render();
@@ -356,7 +361,6 @@
       if (items.length) panel.append(groupBlock(group, items, formTile));
       if (group.id === "listings") panel.append(dashboardsBlock());
     });
-    panel.append(truthsBlock(state.data.boldTruths));
   }
 
   function renderWelcome() {
@@ -372,6 +376,8 @@
     welcome.append(greet);
     if (!name && storageGet(NAME_ASKED_KEY) !== "1") welcome.append(namePrompt());
     welcome.append(heroCard(state.data.boldTruths));
+    const stoic = stoicCard(state.quotes);
+    if (stoic) welcome.append(stoic);
   }
 
   function greeting(date) {
@@ -414,22 +420,42 @@
     const index = dayIndex(truths.length);
     const card = document.createElement("article");
     card.className = "hero";
-    card.id = "truth-of-the-day";
+    card.id = "truths";
     const kicker = document.createElement("p");
     kicker.className = "kicker";
-    kicker.textContent = "Truth of the day · " + String(index + 1).padStart(2, "0");
+    kicker.textContent = "Bold Truth of the day";
     const when = document.createElement("p");
     when.className = "when";
-    when.textContent = new Intl.DateTimeFormat("en-US", {
-      weekday: "long",
-      month: "long",
-      day: "numeric",
-    }).format(new Date());
+    when.textContent = nyDateLabel();
     const quote = document.createElement("p");
     quote.className = "truth-text";
     quote.textContent = truths[index];
     card.append(kicker, when, quote);
     return card;
+  }
+
+  function stoicCard(quotes) {
+    if (!quotes.length) return null;
+    const item = quotes[dayIndex(quotes.length)];
+    const card = document.createElement("article");
+    card.className = "stoic";
+    card.id = "stoic-of-the-day";
+    const kicker = document.createElement("p");
+    kicker.className = "kicker";
+    kicker.textContent = "Stoic quote of the day";
+    const quote = document.createElement("p");
+    quote.className = "truth-text";
+    quote.textContent = item.text;
+    const byline = document.createElement("p");
+    byline.className = "byline";
+    byline.textContent = item.source ? item.author + " · " + item.source : item.author;
+    card.append(kicker, quote, byline);
+    return card;
+  }
+
+  function validQuotes(parsed) {
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((item) => item && typeof item.text === "string" && item.text.trim() && typeof item.author === "string" && item.author.trim());
   }
 
   function emptyShelf(kind, message) {
@@ -971,11 +997,36 @@
     return svg;
   }
 
-  function dayIndex(length) {
-    const now = new Date();
-    const localMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-    const day = Math.floor(localMidnight / 86400000);
-    return ((day % length) + length) % length;
+  function nyParts(date) {
+    const parts = new Intl.DateTimeFormat("en-US", {
+      timeZone: "America/New_York",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).formatToParts(date || new Date());
+    const value = (type) => Number(parts.find((part) => part.type === type).value);
+    return { year: value("year"), month: value("month"), day: value("day") };
+  }
+
+  function nyDayOfYear(date) {
+    const { year, month, day } = nyParts(date);
+    const current = Date.UTC(year, month - 1, day);
+    const start = Date.UTC(year, 0, 1);
+    return Math.floor((current - start) / 86400000) + 1;
+  }
+
+  function nyDateLabel(date) {
+    return new Intl.DateTimeFormat("en-US", {
+      timeZone: "America/New_York",
+      weekday: "long",
+      month: "long",
+      day: "numeric",
+    }).format(date || new Date());
+  }
+
+  function dayIndex(length, date) {
+    if (!length) return 0;
+    return (nyDayOfYear(date) - 1) % length;
   }
 
   function isPinned(url) {
