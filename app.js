@@ -1786,10 +1786,35 @@
     const altRow = document.createElement("p");
     altRow.className = "intake-mini";
     altRow.append(myself, blankPdf);
+    const clearNotes = document.createElement("button");
+    clearNotes.type = "button";
+    clearNotes.className = "intake-clear";
+    clearNotes.textContent = "Clear form";
     const formWrap = document.createElement("div");
     formWrap.id = "intake-form";
     formWrap.hidden = true;
-    scroller.append(notesLabel, notesBox, stepLinks, fileLabel, fileList, fillButton, orDivider, diyLabel, geminiButton, geminiHint, promptBox, spinner, aiStatus, review, altRow, formWrap);
+    const clearForm = document.createElement("button");
+    clearForm.type = "button";
+    clearForm.className = "intake-clear";
+    clearForm.textContent = "Clear form";
+    const confirmBox = document.createElement("div");
+    confirmBox.className = "intake-confirm";
+    confirmBox.hidden = true;
+    const confirmText = document.createElement("p");
+    confirmText.textContent = "Clear everything? This removes your notes, attachments and filled-in fields.";
+    const confirmActions = document.createElement("div");
+    confirmActions.className = "intake-confirm-actions";
+    const confirmCancel = document.createElement("button");
+    confirmCancel.type = "button";
+    confirmCancel.className = "intake-confirm-cancel";
+    confirmCancel.textContent = "Cancel";
+    const confirmClear = document.createElement("button");
+    confirmClear.type = "button";
+    confirmClear.className = "intake-confirm-clear";
+    confirmClear.textContent = "Clear";
+    confirmActions.append(confirmCancel, confirmClear);
+    confirmBox.append(confirmText, confirmActions);
+    scroller.append(notesLabel, notesBox, stepLinks, fileLabel, fileList, fillButton, orDivider, diyLabel, geminiButton, geminiHint, promptBox, spinner, aiStatus, review, altRow, clearNotes, formWrap);
 
     Intake.sections.forEach((section) => {
       const block = document.createElement("section");
@@ -1802,6 +1827,7 @@
       block.append(heading, grid);
       formWrap.append(block);
     });
+    formWrap.append(clearForm);
     if (formHasAnswers()) formWrap.hidden = false;
 
     const sendBar = document.createElement("div");
@@ -2114,6 +2140,43 @@
     function fieldSnapshot(field, value) {
       if (field.type === "multi") return (value || []).join("\n");
       return String(value || "").trim();
+    }
+    function askClear(anchor) {
+      anchor.after(confirmBox);
+      confirmBox.hidden = false;
+      confirmBox.scrollIntoView({ block: "nearest" });
+    }
+    function resetIntake() {
+      window.clearTimeout(saveTimer);
+      stopIntakeSpeech();
+      if (dictate) dictate.textContent = "Dictate";
+      notesBox.value = "";
+      intakeAttached.forEach((item) => {
+        if (item.url) URL.revokeObjectURL(item.url);
+      });
+      intakeAttached = [];
+      renderFiles();
+      refreshGeminiChoice();
+      Intake.fields.forEach((field) => {
+        values[field.id] = field.type === "multi" ? [] : "";
+        clearFieldState(field.id);
+      });
+      syncAll();
+      review.replaceChildren();
+      review.hidden = true;
+      aiStatus.textContent = "";
+      sendStatus.textContent = "";
+      spinner.hidden = true;
+      fillButton.disabled = false;
+      preview.hidden = true;
+      formWrap.hidden = true;
+      confirmBox.hidden = true;
+      try {
+        localStorage.removeItem(Intake.DRAFT_KEY);
+      } catch (error) {
+        /* private mode */
+      }
+      scroller.scrollTo({ top: 0 });
     }
     function showForm() {
       formWrap.hidden = false;
@@ -2463,6 +2526,12 @@
       openGeminiYourself(text);
     });
     myself.addEventListener("click", showForm);
+    clearNotes.addEventListener("click", () => askClear(clearNotes));
+    clearForm.addEventListener("click", () => askClear(clearForm));
+    confirmCancel.addEventListener("click", () => {
+      confirmBox.hidden = true;
+    });
+    confirmClear.addEventListener("click", resetIntake);
     if (dictate) {
       dictate.addEventListener("click", () => {
         if (intakeRecognizer) {

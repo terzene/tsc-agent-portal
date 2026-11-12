@@ -1577,6 +1577,56 @@ button:focus-visible,
   font-weight: 800;
 }
 
+.intake-clear {
+  display: inline-flex;
+  align-items: center;
+  margin: 10px 0 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 700;
+  min-height: 32px;
+}
+
+.intake-confirm {
+  margin-top: 8px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.intake-confirm[hidden] {
+  display: none;
+}
+
+.intake-confirm p {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.intake-confirm-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.intake-confirm-cancel,
+.intake-confirm-clear {
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 800;
+}
+
 .intake-gemini-hint {
   margin: 8px 0 0;
   color: var(--muted);
