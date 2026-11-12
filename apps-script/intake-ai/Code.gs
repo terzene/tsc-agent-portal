@@ -110,7 +110,7 @@ function buildPrompt_(notes, fileNames) {
 }
 
 function callGemini_(apiKey, parts) {
-  var url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + encodeURIComponent(apiKey);
+  var url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=" + encodeURIComponent(apiKey);
   var payload = {
     contents: [{ role: "user", parts: parts }],
     generationConfig: {

@@ -629,8 +629,8 @@
     parse: parse,
     cleanText: cleanText,
     aiConfig: {
-      url: "",
-      secret: "",
+      url: "https://script.google.com/macros/s/AKfycbxUu_XtP0qEiLBGiMGKP3LbjPNAZyWW-mgN-TVQvfW8f2MD_qsuneVeWVcuC7EqVObQGA/exec",
+      secret: "9a59d47bc41e252599aa22a57e7cfc55bf45a7926b479fec",
     },
   };
 });
