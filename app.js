@@ -1694,15 +1694,43 @@
 
     const head = document.createElement("div");
     head.className = "intake-head";
+    const headBar = document.createElement("div");
+    headBar.className = "intake-head-bar";
     const title = document.createElement("h2");
     title.id = "listing-intake-title";
     title.textContent = "Listing Intake";
+    const headActions = document.createElement("div");
+    headActions.className = "intake-head-actions";
+    const headerClearWrap = document.createElement("div");
+    headerClearWrap.className = "intake-head-clear-wrap";
+    const headerClear = document.createElement("button");
+    headerClear.type = "button";
+    headerClear.className = "intake-head-clear";
+    const headerClearIcon = svgEl();
+    headerClearIcon.setAttribute("width", "16");
+    headerClearIcon.setAttribute("height", "16");
+    ["M4 7h16", "M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7", "M7.5 7l.7 12.2a1 1 0 0 0 1 .8h5.6a1 1 0 0 0 1-.8L16.5 7", "M10 11v6M14 11v6"].forEach((d) => {
+      const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      path.setAttribute("d", d);
+      path.setAttribute("fill", "none");
+      path.setAttribute("stroke", "currentColor");
+      path.setAttribute("stroke-width", "1.8");
+      path.setAttribute("stroke-linecap", "round");
+      path.setAttribute("stroke-linejoin", "round");
+      headerClearIcon.append(path);
+    });
+    const headerClearLabel = document.createElement("span");
+    headerClearLabel.textContent = "Clear form";
+    headerClear.append(headerClearIcon, headerClearLabel);
+    headerClearWrap.append(headerClear);
     const close = document.createElement("button");
     close.type = "button";
     close.className = "icon-btn";
     close.setAttribute("aria-label", "Close Listing Intake");
     close.textContent = "Close";
-    head.append(title, close);
+    headActions.append(headerClearWrap, close);
+    headBar.append(title, headActions);
+    head.append(headBar);
 
     const scroller = document.createElement("div");
     scroller.className = "intake-scroll";
@@ -2526,6 +2554,7 @@
       openGeminiYourself(text);
     });
     myself.addEventListener("click", showForm);
+    headerClear.addEventListener("click", () => askClear(headerClear));
     clearNotes.addEventListener("click", () => askClear(clearNotes));
     clearForm.addEventListener("click", () => askClear(clearForm));
     confirmCancel.addEventListener("click", () => {

@@ -23,6 +23,41 @@
         } catch (error) {}
       })();
     </script>
+    <script>
+      (function () {
+        var fine = "(min-width: 768px) and (hover: hover) and (pointer: fine)";
+        var tablet = "(min-width: 768px) and (pointer: coarse) and (min-height: 700px)";
+        function isPhone() {
+          var ua = "";
+          try { ua = navigator.userAgent || ""; } catch (error) { ua = ""; }
+          if (/iPhone|iPod/i.test(ua)) return true;
+          if (/iPad/i.test(ua)) return false;
+          if (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1) return false;
+          if (/Android/i.test(ua)) return /Mobile/i.test(ua);
+          try {
+            var data = navigator.userAgentData;
+            if (data && data.mobile === true) return true;
+            if (data && data.mobile === false) return false;
+          } catch (error) {}
+          return /Mobi|Mobile/i.test(ua);
+        }
+        function wantsDesktop() {
+          if (isPhone()) return false;
+          try {
+            if (window.matchMedia(fine).matches || window.matchMedia(tablet).matches) return true;
+            return window.matchMedia("(min-width: 768px)").matches;
+          } catch (error) {
+            return (window.innerWidth || 0) >= 768;
+          }
+        }
+        function applyDesktop() {
+          document.documentElement.classList.toggle("desktop", wantsDesktop());
+        }
+        applyDesktop();
+        window.addEventListener("resize", applyDesktop);
+        window.addEventListener("orientationchange", applyDesktop);
+      })();
+    </script>
     <link rel="manifest" href="manifest.json">
     <link rel="icon" href="icons/icon-192.png" type="image/png" sizes="192x192">
     <link rel="icon" href="icons/icon-512.png" type="image/png" sizes="512x512">
@@ -32,6 +67,7 @@
   <body>
     <a class="skip" href="#panel">Skip to content</a>
     <div class="app">
+      <div class="shell">
       <header class="brand">
         <div class="brand-row">
           <img class="wordmark" src="assets/wordmark.png" width="1280" height="339" alt="The Sold Collective">
@@ -92,6 +128,7 @@
       </footer>
 
       <p class="status" id="status" hidden role="status">You’re offline. This page is saved on your phone. Pull to refresh when you are back online.</p>
+      </div>
 
       <nav class="dock" aria-label="Primary">
         <button type="button" id="nav-home" data-view="home" aria-current="page">
