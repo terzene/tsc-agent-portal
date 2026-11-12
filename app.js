@@ -1782,7 +1782,7 @@
     const spinnerDot = document.createElement("span");
     spinnerDot.className = "intake-spinner-dot";
     spinnerDot.setAttribute("aria-hidden", "true");
-    spinner.append(spinnerDot, document.createTextNode("Reading your notes\u2026 ~15 sec"));
+    spinner.append(spinnerDot, document.createTextNode("Reading your notes\u2026 up to a minute"));
     const aiStatus = document.createElement("p");
     aiStatus.className = "eval-status";
     aiStatus.setAttribute("role", "status");
@@ -2222,7 +2222,7 @@
         for (let i = 0; i < intakeAttached.length; i += 1) {
           files.push(await fileToPayload(intakeAttached[i].file));
         }
-        const response = await fetch(url, {
+        const fetchOptions = {
           method: "POST",
           headers: { "Content-Type": "text/plain;charset=utf-8" },
           body: JSON.stringify({
@@ -2231,7 +2231,11 @@
             notes: notesBox.value,
             files: files,
           }),
-        });
+        };
+        if (typeof AbortSignal !== "undefined" && typeof AbortSignal.timeout === "function") {
+          fetchOptions.signal = AbortSignal.timeout(120000);
+        }
+        const response = await fetch(url, fetchOptions);
         const raw = await response.text();
         let payload = null;
         try {
