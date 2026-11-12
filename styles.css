@@ -1229,18 +1229,72 @@ button:focus-visible,
 }
 
 .intake-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: calc(12px + env(safe-area-inset-top)) 16px 12px;
+  position: relative;
+  z-index: 3;
   border-bottom: 1px solid var(--line);
   background: var(--surface);
 }
 
+.intake-head-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: calc(10px + env(safe-area-inset-top)) 10px 10px 14px;
+}
+
 .intake-head h2 {
-  font-size: 22px;
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 20px;
   letter-spacing: -0.03em;
+  line-height: 1.15;
+}
+
+.intake-head-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 2px;
+}
+
+.intake-head-clear-wrap {
+  position: relative;
+}
+
+.intake-head-clear {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 44px;
+  padding: 0 10px;
+  border: 1px solid rgba(33, 31, 31, 0.22);
+  border-radius: 12px;
+  background: rgba(33, 31, 31, 0.04);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.intake-head-clear svg {
+  flex: 0 0 auto;
+}
+
+:root[data-theme="dark"] .intake-head-clear {
+  border-color: rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.intake-head-clear-wrap .intake-confirm {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 4;
+  width: min(280px, calc(100vw - 24px));
+  margin-top: 0;
+  box-shadow: 0 12px 32px rgba(33, 31, 31, 0.16);
 }
 
 .intake-head .icon-btn {
@@ -1918,5 +1972,157 @@ button.tile-link {
     border: 1px solid var(--card-border);
     border-top: 3px solid var(--red);
     border-radius: 22px;
+  }
+}
+
+/* Desktop and tablet layout. Phones never get html.desktop, so these rules
+   leave the phone sheet, dock, and grids alone. */
+html.desktop body {
+  background: #eceae8;
+}
+
+html.desktop[data-theme="dark"] body {
+  background: #161414;
+}
+
+html.desktop .app {
+  display: flex;
+  align-items: flex-start;
+  width: min(100%, 1200px);
+  max-width: 1200px;
+  min-height: 100dvh;
+  margin: 0 auto;
+  padding-bottom: 0;
+  background: var(--bg);
+}
+
+html.desktop .shell {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding-bottom: 32px;
+}
+
+html.desktop .dock {
+  position: sticky;
+  top: 0;
+  left: auto;
+  bottom: auto;
+  order: -1;
+  flex: 0 0 200px;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 4px;
+  width: 200px;
+  height: 100dvh;
+  margin: 0;
+  padding: 16px 10px;
+  transform: none;
+  border-top: 0;
+  border-right: 1px solid var(--line);
+  background: var(--surface);
+  overflow: auto;
+}
+
+html.desktop .dock button {
+  flex: 0 0 auto;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  width: 100%;
+  min-height: 48px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  font-size: 15px;
+  text-align: left;
+}
+
+html.desktop .dock button[aria-current="page"] {
+  background: var(--icon-bg);
+  color: var(--red);
+}
+
+html.desktop .action-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+html.desktop .stack,
+html.desktop .dash-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+html.desktop #panel:has(.person) {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: start;
+  gap: 0 12px;
+}
+
+html.desktop #panel:has(.person) .help-btn,
+html.desktop #panel:has(.person) .empty {
+  grid-column: 1 / -1;
+}
+
+html.desktop .eval-sheet {
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+html.desktop .eval-card {
+  width: min(880px, calc(100vw - 48px));
+  max-height: min(860px, calc(100dvh - 48px));
+  border: 1px solid var(--card-border);
+  border-top: 3px solid var(--red);
+  border-radius: 22px;
+  box-shadow: 0 24px 70px rgba(33, 31, 31, 0.22);
+}
+
+html.desktop .eval-fields {
+  grid-template-columns: 1fr 1fr;
+  align-items: start;
+}
+
+html.desktop .eval-fields label:has(textarea) {
+  grid-column: 1 / -1;
+}
+
+html.desktop .intake-card {
+  width: min(960px, calc(100vw - 48px));
+  height: min(880px, calc(100dvh - 48px));
+  max-height: calc(100dvh - 48px);
+  border-radius: 22px;
+  box-shadow: 0 24px 70px rgba(33, 31, 31, 0.22);
+}
+
+html.desktop .intake-head h2 {
+  font-size: 22px;
+}
+
+html.desktop .intake-head-clear {
+  padding: 0 12px;
+  font-size: 14px;
+}
+
+html.desktop .intake-fields {
+  gap: 14px 16px;
+}
+
+html.desktop .status {
+  bottom: 0;
+}
+
+@media (min-width: 1100px) {
+  html.desktop .dock {
+    flex-basis: 228px;
+    width: 228px;
+  }
+}
+
+@media (min-width: 1200px) {
+  html.desktop .action-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
