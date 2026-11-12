@@ -2270,7 +2270,7 @@
       });
     }
     function intakePromptText() {
-      return MODEL_LINE + "\n\n" + Intake.promptBody(notesBox.value, intakeAttached.map((item) => item.file.name));
+      return MODEL_LINE + "\n\n" + Intake.plainPrompt(notesBox.value, intakeAttached.map((item) => item.file.name));
     }
     function canShareIntakeFiles() {
       if (!intakeAttached.length || !navigator.share || typeof navigator.canShare !== "function") return false;
