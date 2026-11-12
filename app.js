@@ -594,6 +594,9 @@
     return wrap;
   }
 
+  const HOME_EVAL_MODEL_LINE =
+    "Use the newest, most capable model available and turn on its thinking / extended reasoning mode (sometimes labeled Thinking, Pro, Deep Think or complex problems) before pasting this prompt.";
+
   function homeEvalTile(spec) {
     const button = document.createElement("button");
     button.type = "button";
@@ -637,6 +640,11 @@
     return text;
   }
 
+  function homeEvalPromptText(pack, values) {
+    const body = values ? fillHomeEvalPrompt(pack, values) : pack.prompt;
+    return HOME_EVAL_MODEL_LINE + "\n\n" + body;
+  }
+
   function openHomeEval() {
     const existing = document.getElementById("home-eval");
     if (existing) existing.remove();
@@ -677,7 +685,10 @@
     }
     const note = document.createElement("p");
     note.className = "eval-note";
-    note.textContent = "This is the prompt from AI Prompt Home Price Eval. Copy it, then paste it into Gemini. This app does not paste it for you.";
+    note.textContent =
+      "This is the prompt from AI Prompt Home Price Eval. Copy it, then paste it into Gemini. " +
+      HOME_EVAL_MODEL_LINE +
+      " This app does not paste it for you.";
     card.append(note);
     const guide = document.createElement("details");
     guide.className = "eval-guide";
@@ -700,7 +711,7 @@
       input.placeholder = field.token;
       if (field.multiline) input.rows = 3;
       input.addEventListener("input", () => {
-        promptBox.value = fillHomeEvalPrompt(pack, homeEvalValues(form));
+        promptBox.value = homeEvalPromptText(pack, homeEvalValues(form));
       });
       label.append(labelText, input);
       form.append(label);
@@ -713,11 +724,15 @@
     promptBox.id = "home-eval-prompt";
     promptBox.className = "eval-prompt";
     promptBox.readOnly = true;
-    promptBox.value = pack.prompt;
+    promptBox.value = homeEvalPromptText(pack);
     card.append(promptLabel, promptBox);
     const status = document.createElement("p");
     status.className = "eval-status";
     status.setAttribute("role", "status");
+    const modelNote = document.createElement("p");
+    modelNote.className = "eval-note";
+    modelNote.id = "home-eval-model";
+    modelNote.textContent = HOME_EVAL_MODEL_LINE;
     const actions = document.createElement("div");
     actions.className = "eval-actions";
     const copyButton = document.createElement("button");
@@ -732,7 +747,7 @@
     links.className = "eval-links";
     links.append(evalLink(pack.geminiUrl, "Open Gemini"));
     if (openable(sourceUrl)) links.append(evalLink(sourceUrl, "Original doc"));
-    card.append(status, actions, links);
+    card.append(status, modelNote, actions, links);
     copyButton.addEventListener("click", () => copyHomeEval(promptBox, status, false, pack.geminiUrl));
     openButton.addEventListener("click", () => copyHomeEval(promptBox, status, true, pack.geminiUrl));
     sheet.addEventListener("click", (event) => {
