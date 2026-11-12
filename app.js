@@ -2275,14 +2275,12 @@
     }
     function refreshGeminiChoice() {
       const share = canShareIntakeFiles();
-      geminiButton.textContent = share ? "Share to Gemini" : "Copy prompt & open Gemini";
+      geminiButton.textContent = share ? "Copy prompt & share files to Gemini" : "Copy prompt & open Gemini";
       geminiHint.textContent = share
-        ? "Pick Gemini in the share sheet."
+        ? "Then paste the prompt in Gemini."
         : "Paste, then attach your photos/files in Gemini.";
     }
-    async function openGeminiYourself() {
-      const text = intakePromptText();
-      promptBox.value = text;
+    async function openGeminiYourself(text) {
       if (canShareIntakeFiles()) {
         try {
           await navigator.share({
@@ -2290,7 +2288,7 @@
             text: text,
             files: intakeAttached.map((item) => item.file),
           });
-          aiStatus.textContent = "Pick Gemini in the share sheet, then send.";
+          aiStatus.textContent = "Prompt copied. In Gemini, tap the message box, paste, then send.";
           return;
         } catch (error) {
           if (error && error.name === "AbortError") return;
@@ -2451,7 +2449,11 @@
       fillWithAi();
     });
     geminiButton.addEventListener("click", () => {
-      openGeminiYourself();
+      const text = intakePromptText();
+      promptBox.value = text;
+      startClipboardWrite(text);
+      selectPrompt(promptBox);
+      openGeminiYourself(text);
     });
     myself.addEventListener("click", showForm);
     if (dictate) {
