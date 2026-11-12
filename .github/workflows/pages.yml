@@ -51,6 +51,7 @@ jobs:
               "icons/maskable-192.png",
               "icons/maskable-512.png",
               "icons/apple-touch-icon.png",
+              "forms/listing-intake-v2.pdf",
           ]
           missing = [path for path in required if not Path(path).is_file()]
           if missing:
@@ -80,7 +81,7 @@ jobs:
       - name: Assemble site
         run: |
           mkdir -p _site
-          cp -a index.html styles.css listing-intake.js app.js sw.js manifest.json .nojekyll data icons assets _site/
+          cp -a index.html styles.css listing-intake.js app.js sw.js manifest.json .nojekyll data icons assets forms _site/
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
