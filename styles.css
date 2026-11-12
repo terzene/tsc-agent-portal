@@ -281,6 +281,28 @@ h2 {
   padding: 0 var(--pad);
 }
 
+.quick-subhead {
+  margin: 0;
+  padding: 0 20px 8px;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.quick-group-split {
+  margin-top: 20px;
+}
+
+.quick-group-split::before {
+  content: "";
+  display: block;
+  height: 1px;
+  margin: 0 var(--pad) 16px;
+  background: var(--line);
+}
+
 button.action-tile {
   width: 100%;
   text-align: left;
