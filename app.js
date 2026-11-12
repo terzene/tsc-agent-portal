@@ -2340,7 +2340,7 @@
           }),
         };
         if (typeof AbortSignal !== "undefined" && typeof AbortSignal.timeout === "function") {
-          fetchOptions.signal = AbortSignal.timeout(120000);
+          fetchOptions.signal = AbortSignal.timeout(150000);
         }
         const response = await fetch(url, fetchOptions);
         const raw = await response.text();
@@ -2353,7 +2353,10 @@
           aiStatus.textContent = "Couldn't fill it this time. Try again, use Gemini, or fill it in yourself.";
         }
       } catch (error) {
-        aiStatus.textContent = "Couldn't fill it this time. Try again, use Gemini, or fill it in yourself.";
+        const name = error && error.name;
+        aiStatus.textContent = name === "TimeoutError" || name === "AbortError"
+          ? "That took too long. Try again, use Gemini, or fill it in yourself."
+          : "Couldn't fill it this time. Try again, use Gemini, or fill it in yourself.";
       } finally {
         fillButton.disabled = false;
         spinner.hidden = true;
