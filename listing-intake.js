@@ -628,5 +628,9 @@
     promptBody: promptBody,
     parse: parse,
     cleanText: cleanText,
+    aiConfig: {
+      url: "",
+      secret: "",
+    },
   };
 });

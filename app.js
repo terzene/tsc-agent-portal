@@ -1612,7 +1612,7 @@
   function intakeActionTile(spec) {
     const fromNotes = spec.intake === "notes";
     const help = fromNotes
-      ? "Paste notes or add a file, then let AI fill the form."
+      ? "Add notes or a file and fill the form with AI."
       : "Fill it out here and send it to Miranda.";
     const button = document.createElement("button");
     button.type = "button";
@@ -1733,26 +1733,15 @@
     aiSummary.textContent = "Have notes? Let AI fill this for you";
     const steps = document.createElement("div");
     steps.className = "intake-steps";
-
-    const step1 = document.createElement("div");
-    step1.className = "intake-step";
-    const step1Title = document.createElement("p");
-    step1Title.className = "intake-step-title";
-    const step1Num = document.createElement("span");
-    step1Num.className = "intake-step-num";
-    step1Num.textContent = "1";
-    const step1Text = document.createElement("span");
-    step1Text.textContent = "Paste or dictate your notes";
-    step1Title.append(step1Num, step1Text);
     const notesBox = document.createElement("textarea");
     notesBox.id = "intake-notes";
-    notesBox.rows = 3;
-    notesBox.placeholder = "Notes, or leave this blank if you only have a file.";
+    notesBox.rows = 4;
+    notesBox.placeholder = "Paste or dictate your notes. A file alone is fine too.";
     notesBox.value = draft.rawNotes;
     notesBox.setAttribute("aria-label", "Paste or dictate your notes");
     notesBox.autocomplete = "off";
-    const step1Links = document.createElement("p");
-    step1Links.className = "intake-mini";
+    const stepLinks = document.createElement("p");
+    stepLinks.className = "intake-mini";
     const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
     let dictate = null;
     if (Speech) {
@@ -1760,94 +1749,70 @@
       dictate.type = "button";
       dictate.className = "intake-text-btn";
       dictate.textContent = "Dictate";
-      step1Links.append(dictate);
+      stepLinks.append(dictate);
     }
+    const cameraLabel = document.createElement("label");
+    cameraLabel.className = "intake-text-btn";
+    cameraLabel.append(document.createTextNode("Take a photo"));
+    const cameraInput = document.createElement("input");
+    cameraInput.type = "file";
+    cameraInput.className = "intake-file-input";
+    cameraInput.accept = "image/*";
+    cameraInput.setAttribute("capture", "environment");
+    cameraLabel.append(cameraInput);
     const fileLabel = document.createElement("label");
     fileLabel.className = "intake-text-btn";
-    fileLabel.textContent = "Add a photo, PDF, or doc";
+    fileLabel.append(document.createTextNode("Add a photo, PDF, or doc"));
     const fileInput = document.createElement("input");
     fileInput.type = "file";
     fileInput.className = "intake-file-input";
     fileInput.multiple = true;
-    fileInput.accept = "image/*,.pdf,.doc,.docx,.txt,.rtf,.heic,.heif,application/pdf";
+    fileInput.accept = "image/*,.pdf,.doc,.docx,.txt,.heic,.heif,application/pdf";
     fileLabel.append(fileInput);
-    step1Links.append(fileLabel);
+    stepLinks.append(cameraLabel, fileLabel);
     const fileList = document.createElement("ul");
     fileList.className = "intake-files";
-    step1.append(step1Title, notesBox, step1Links, fileList);
-
-    const step2 = document.createElement("div");
-    step2.className = "intake-step";
-    const step2Title = document.createElement("p");
-    step2Title.className = "intake-step-title";
-    const step2Num = document.createElement("span");
-    step2Num.className = "intake-step-num";
-    step2Num.textContent = "2";
-    const step2Text = document.createElement("span");
-    step2Text.textContent = "Copy & open Gemini";
-    step2Title.append(step2Num, step2Text);
-    const geminiButton = document.createElement("button");
-    geminiButton.type = "button";
-    geminiButton.className = "eval-primary";
-    geminiButton.textContent = "Copy & open Gemini";
-    const geminiHint = document.createElement("p");
-    geminiHint.className = "intake-step-hint";
-    geminiHint.textContent = "Paste it in Gemini and send.";
-    const step2Links = document.createElement("p");
-    step2Links.className = "intake-mini";
-    const copyOnly = document.createElement("button");
-    copyOnly.type = "button";
-    copyOnly.className = "intake-text-btn";
-    copyOnly.textContent = "Copy prompt";
-    const copyOpenLink = document.createElement("button");
-    copyOpenLink.type = "button";
-    copyOpenLink.className = "intake-text-btn";
-    copyOpenLink.textContent = "Copy & open Gemini";
-    copyOpenLink.hidden = true;
-    step2Links.append(copyOnly, copyOpenLink);
-    step2.append(step2Title, geminiButton, geminiHint, step2Links);
-
-    const step3 = document.createElement("div");
-    step3.className = "intake-step";
-    const step3Title = document.createElement("p");
-    step3Title.className = "intake-step-title";
-    const step3Num = document.createElement("span");
-    step3Num.className = "intake-step-num";
-    step3Num.textContent = "3";
-    const step3Text = document.createElement("span");
-    step3Text.textContent = "Paste Gemini's answer here";
-    step3Title.append(step3Num, step3Text);
-    const pasteBox = document.createElement("textarea");
-    pasteBox.id = "intake-ai-result";
-    pasteBox.rows = 3;
-    pasteBox.placeholder = "Paste Gemini's answer here";
-    pasteBox.value = draft.aiPaste;
-    pasteBox.setAttribute("aria-label", "Paste Gemini's answer here");
-    pasteBox.autocomplete = "off";
     const fillButton = document.createElement("button");
     fillButton.type = "button";
     fillButton.className = "eval-primary";
-    fillButton.textContent = "Fill the form";
+    fillButton.textContent = "Fill the form with AI";
+    const spinner = document.createElement("p");
+    spinner.className = "intake-spinner";
+    spinner.hidden = true;
+    const spinnerDot = document.createElement("span");
+    spinnerDot.className = "intake-spinner-dot";
+    spinnerDot.setAttribute("aria-hidden", "true");
+    spinner.append(spinnerDot, document.createTextNode("Reading your notes\u2026 ~15 sec"));
     const aiStatus = document.createElement("p");
     aiStatus.className = "eval-status";
     aiStatus.setAttribute("role", "status");
     const review = document.createElement("div");
     review.className = "intake-review";
     review.hidden = true;
-    step3.append(step3Title, pasteBox, fillButton, aiStatus, review);
-
-    const promptDetails = document.createElement("details");
-    promptDetails.className = "intake-prompt-tuck";
-    const promptSummary = document.createElement("summary");
-    promptSummary.textContent = "See the prompt";
+    const fallback = document.createElement("div");
+    fallback.className = "intake-fallback";
+    fallback.hidden = true;
+    const fallbackLink = document.createElement("button");
+    fallbackLink.type = "button";
+    fallbackLink.className = "intake-text-btn";
+    fallbackLink.textContent = "Copy prompt and open Gemini";
+    const pasteBox = document.createElement("textarea");
+    pasteBox.id = "intake-ai-result";
+    pasteBox.rows = 3;
+    pasteBox.placeholder = "Paste Gemini's answer here";
+    pasteBox.value = draft.aiPaste;
+    pasteBox.setAttribute("aria-label", "Paste Gemini's answer here");
+    const fallbackFill = document.createElement("button");
+    fallbackFill.type = "button";
+    fallbackFill.className = "intake-text-btn";
+    fallbackFill.textContent = "Fill from that answer";
     const promptBox = document.createElement("textarea");
-    promptBox.className = "eval-prompt";
+    promptBox.className = "intake-prompt-fallback";
     promptBox.readOnly = true;
-    promptBox.rows = 4;
-    promptBox.value = MODEL_LINE + "\n\n" + Intake.promptBody(notesBox.value, intakeAttached.map((file) => file.name));
-    promptDetails.append(promptSummary, promptBox);
-
-    steps.append(step1, step2, step3, promptDetails);
+    promptBox.tabIndex = -1;
+    promptBox.setAttribute("aria-hidden", "true");
+    fallback.append(fallbackLink, pasteBox, fallbackFill, promptBox);
+    steps.append(notesBox, stepLinks, fileList, fillButton, spinner, aiStatus, review, fallback);
     ai.append(aiSummary, steps);
     scroller.append(ai);
 
@@ -2136,23 +2101,13 @@
         review.append(item);
       });
     }
-    function applyAiResult() {
-      const text = pasteBox.value.trim();
-      if (!text) {
-        aiStatus.textContent = "Paste Gemini's answer first.";
-        pasteBox.focus();
-        return;
-      }
+    function applyParsedText(text) {
       const before = {};
       Intake.fields.forEach((field) => {
         before[field.id] = Array.isArray(values[field.id]) ? values[field.id].slice() : values[field.id];
       });
-      const result = Intake.parse(pasteBox.value, values, Intake.today());
-      if (!result.ok) {
-        aiStatus.textContent = "That didn't look like Gemini's answer. Paste the whole reply.";
-        pasteBox.focus();
-        return;
-      }
+      const result = Intake.parse(text, values, Intake.today());
+      if (!result.ok) return false;
       Intake.fields.forEach((field) => {
         values[field.id] = result.values[field.id];
       });
@@ -2164,10 +2119,11 @@
       const filled = countChangedFields(before, result.values);
       const highlights = Object.keys(result.needs).length;
       let line = filled === 1 ? "Filled 1 field." : "Filled " + filled + " fields.";
-      if (!filled && !highlights) line = "Nothing new was filled in. Paste the whole answer from Gemini.";
+      if (!filled && !highlights) line = "Nothing new was filled in. Try again.";
       else if (highlights) line += " Check the highlighted ones.";
       aiStatus.textContent = line;
       aiStatus.scrollIntoView({ block: "nearest" });
+      return true;
     }
     function countChangedFields(before, after) {
       let count = 0;
@@ -2182,72 +2138,119 @@
       if (field.type === "multi") return (value || []).join("\n");
       return String(value || "").trim();
     }
-    function intakePromptText() {
-      return MODEL_LINE + "\n\n" + Intake.promptBody(notesBox.value, intakeAttached.map((file) => file.name));
+    function showFallback(message) {
+      aiStatus.textContent = message;
+      fallback.hidden = false;
     }
-    function canShareIntakeFiles() {
-      if (!intakeAttached.length || !navigator.share || !navigator.canShare) return false;
-      try {
-        return navigator.canShare({ files: intakeAttached });
-      } catch (error) {
-        return false;
-      }
+    function intakePromptText() {
+      return MODEL_LINE + "\n\n" + Intake.promptBody(notesBox.value, intakeAttached.map((item) => item.file.name));
     }
     function renderFiles() {
       fileList.replaceChildren();
-      intakeAttached.forEach((file, index) => {
-        const item = document.createElement("li");
+      intakeAttached.forEach((item, index) => {
+        const row = document.createElement("li");
+        if (item.url) {
+          const thumb = document.createElement("img");
+          thumb.src = item.url;
+          thumb.alt = "";
+          row.append(thumb);
+        }
         const name = document.createElement("span");
-        name.textContent = file.name;
+        name.textContent = item.file.name;
         const remove = document.createElement("button");
         remove.type = "button";
         remove.className = "intake-text-btn";
-        remove.setAttribute("aria-label", "Remove " + file.name);
+        remove.setAttribute("aria-label", "Remove " + item.file.name);
         remove.textContent = "Remove";
         remove.addEventListener("click", () => {
+          if (item.url) URL.revokeObjectURL(item.url);
           intakeAttached.splice(index, 1);
           renderFiles();
-          refreshGeminiStep();
-          promptBox.value = intakePromptText();
         });
-        item.append(name, remove);
-        fileList.append(item);
+        row.append(name, remove);
+        fileList.append(row);
       });
       fileList.hidden = intakeAttached.length === 0;
     }
-    function refreshGeminiStep() {
-      const share = canShareIntakeFiles();
-      geminiButton.textContent = share ? "Share to Gemini" : "Copy & open Gemini";
-      step2Text.textContent = share ? "Share to Gemini" : "Copy & open Gemini";
-      copyOpenLink.hidden = !share;
-      if (share) geminiHint.textContent = "Pick Gemini in the share sheet, then send.";
-      else if (intakeAttached.length) geminiHint.textContent = "Attach these same files in Gemini (paperclip or +), then send.";
-      else geminiHint.textContent = "Paste it in Gemini and send.";
+    function addIntakeFiles(list) {
+      Array.from(list || []).forEach((file) => {
+        const duplicate = intakeAttached.some((item) => item.file.name === file.name && item.file.size === file.size && item.file.lastModified === file.lastModified);
+        if (duplicate) return;
+        const url = file.type.indexOf("image/") === 0 ? URL.createObjectURL(file) : "";
+        intakeAttached.push({ file: file, url: url });
+      });
+      renderFiles();
     }
-    async function runGemini(mode) {
+    function fileToPayload(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const raw = String(reader.result || "");
+          const base64 = raw.indexOf(",") >= 0 ? raw.split(",")[1] : raw;
+          resolve({
+            name: file.name,
+            mimeType: file.type || "application/octet-stream",
+            base64: base64,
+          });
+        };
+        reader.onerror = () => reject(reader.error);
+        reader.readAsDataURL(file);
+      });
+    }
+    async function fillWithAi() {
       if (!notesBox.value.trim() && !intakeAttached.length) {
         aiStatus.textContent = "Add notes or a file first.";
         notesBox.focus();
         return;
       }
-      const text = intakePromptText();
-      promptBox.value = text;
-      if (!navigator.clipboard || !window.isSecureContext) promptDetails.open = true;
-      if (mode === "share" && canShareIntakeFiles()) {
-        try {
-          await navigator.share({ title: "Listing intake", text: text, files: intakeAttached.slice() });
-          aiStatus.textContent = "Pick Gemini in the share sheet, then send.";
-          return;
-        } catch (error) {
-          if (error && error.name === "AbortError") return;
-          mode = "copy-open";
-        }
+      const config = Intake.aiConfig || {};
+      const url = String(config.url || "").trim();
+      if (!url) {
+        showFallback("AI fill isn't connected yet. Use Gemini yourself, then paste the answer below.");
+        return;
       }
-      await copyPrompt(promptBox, aiStatus, mode !== "copy", Intake.GEMINI_URL);
-      if (intakeAttached.length && mode !== "copy") {
-        aiStatus.textContent = "Copied. Attach these same files in Gemini (paperclip or +), then send.";
-      } else if (mode === "copy-open" && !intakeAttached.length) {
-        aiStatus.textContent = "Copied. Paste it in Gemini and send.";
+      const total = intakeAttached.reduce((sum, item) => sum + item.file.size, 0);
+      if (total > 15 * 1024 * 1024) {
+        aiStatus.textContent = "Those files are over 15 MB. Remove one and try again.";
+        return;
+      }
+      fillButton.disabled = true;
+      spinner.hidden = false;
+      aiStatus.textContent = "";
+      try {
+        const files = [];
+        for (let i = 0; i < intakeAttached.length; i += 1) {
+          files.push(await fileToPayload(intakeAttached[i].file));
+        }
+        const response = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({
+            secret: String(config.secret || ""),
+            origin: location.origin,
+            notes: notesBox.value,
+            files: files,
+          }),
+        });
+        const raw = await response.text();
+        let payload = null;
+        try {
+          payload = JSON.parse(raw);
+        } catch (error) {
+          payload = null;
+        }
+        if (!payload || payload.ok === false || !payload.intake) {
+          showFallback((payload && payload.error) || "AI fill didn't work. You can still use Gemini yourself.");
+          return;
+        }
+        if (!applyParsedText(JSON.stringify(payload.intake))) {
+          showFallback("AI fill came back in a shape the form couldn't use. You can still paste an answer below.");
+        }
+      } catch (error) {
+        showFallback("AI fill didn't work. Check your connection, or use Gemini yourself.");
+      } finally {
+        fillButton.disabled = false;
+        spinner.hidden = true;
       }
     }
     function showPreview(mail, truncated) {
@@ -2328,28 +2331,37 @@
     }
 
     renderFiles();
-    refreshGeminiStep();
-    notesBox.addEventListener("input", () => {
-      promptBox.value = intakePromptText();
-      scheduleSave();
-    });
-    fileInput.addEventListener("change", () => {
-      Array.from(fileInput.files || []).forEach((file) => {
-        const duplicate = intakeAttached.some((item) => item.name === file.name && item.size === file.size && item.lastModified === file.lastModified);
-        if (!duplicate) intakeAttached.push(file);
-      });
-      fileInput.value = "";
-      renderFiles();
-      refreshGeminiStep();
-      promptBox.value = intakePromptText();
-    });
+    notesBox.addEventListener("input", scheduleSave);
+    function onPickFiles(event) {
+      addIntakeFiles(event.target.files);
+      event.target.value = "";
+    }
+    fileInput.addEventListener("change", onPickFiles);
+    cameraInput.addEventListener("change", onPickFiles);
     pasteBox.addEventListener("input", scheduleSave);
-    pasteBox.addEventListener("paste", (event) => {
-      const clip = event.clipboardData && event.clipboardData.getData("text");
-      if (!clip) return;
-      window.setTimeout(() => {
-        if (Intake.parse(pasteBox.value, values, Intake.today()).ok) applyAiResult();
-      }, 0);
+    fillButton.addEventListener("click", () => {
+      fillWithAi();
+    });
+    fallbackLink.addEventListener("click", () => {
+      if (!notesBox.value.trim() && !intakeAttached.length) {
+        aiStatus.textContent = "Add notes or a file first.";
+        notesBox.focus();
+        return;
+      }
+      promptBox.value = intakePromptText();
+      copyPrompt(promptBox, aiStatus, true, Intake.GEMINI_URL);
+    });
+    fallbackFill.addEventListener("click", () => {
+      const text = pasteBox.value.trim();
+      if (!text) {
+        aiStatus.textContent = "Paste Gemini's answer first.";
+        pasteBox.focus();
+        return;
+      }
+      if (!applyParsedText(text)) {
+        aiStatus.textContent = "That didn't look like Gemini's answer. Paste the whole reply.";
+        pasteBox.focus();
+      }
     });
     if (dictate) {
       dictate.addEventListener("click", () => {
@@ -2389,16 +2401,6 @@
         }
       });
     }
-    geminiButton.addEventListener("click", () => {
-      runGemini(canShareIntakeFiles() ? "share" : "copy-open");
-    });
-    copyOpenLink.addEventListener("click", () => {
-      runGemini("copy-open");
-    });
-    copyOnly.addEventListener("click", () => {
-      runGemini("copy");
-    });
-    fillButton.addEventListener("click", applyAiResult);
     sendButton.addEventListener("click", () => {
       sendIntake();
     });
@@ -2422,6 +2424,9 @@
         : "The email text is selected. Copy it, then paste it into an email to Miranda.";
     });
     clearButton.addEventListener("click", () => {
+      intakeAttached.forEach((item) => {
+        if (item.url) URL.revokeObjectURL(item.url);
+      });
       intakeAttached = [];
       try {
         localStorage.removeItem(Intake.DRAFT_KEY);
