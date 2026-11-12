@@ -43,14 +43,26 @@
       tileHelp: "Copy the listing appointment prompt, then paste it into Gemini.",
     },
   };
-  const QUICK_ACTIONS = [
-    { label: "Offer to Purchase", title: "Offer to Purchase", tone: "listings" },
-    { label: "BAA / CIS & Disclosures", title: "BAA / CIS & Disclosures", tone: "buyers" },
-    { label: "Home Eval", promptId: "home-eval", tone: "rentals" },
-    { label: "Appt Prep", promptId: "appt-prep", tone: "tools" },
-    { label: "Local Market", title: "Local Market", tone: "market" },
-    { label: "New Listing Paperwork", title: "New Listing Paperwork", tone: "listings" },
-    { label: "Quick Comps", title: "Quick Comps", tone: "playbooks" },
+  const QUICK_GROUPS = [
+    {
+      id: "forms",
+      title: "Forms",
+      actions: [
+        { label: "Offer to Purchase", title: "Offer to Purchase", tone: "listings" },
+        { label: "BAA / CIS & Disclosures", title: "BAA / CIS & Disclosures", tone: "buyers" },
+        { label: "New Listing Paperwork", title: "New Listing Paperwork", tone: "listings" },
+      ],
+    },
+    {
+      id: "prompts",
+      title: "AI Prompts",
+      actions: [
+        { label: "Home Eval", promptId: "home-eval", tone: "rentals" },
+        { label: "Quick Comps", title: "Quick Comps", tone: "playbooks" },
+        { label: "Local Market", title: "Local Market", tone: "market" },
+        { label: "Appt Prep", promptId: "appt-prep", tone: "tools" },
+      ],
+    },
   ];
   const FORM_GROUPS = [
     {
@@ -581,44 +593,52 @@
   }
 
   function actionGrid() {
-    const label = sectionLabel("Quick actions");
-    const grid = document.createElement("div");
-    grid.className = "action-grid";
-    QUICK_ACTIONS.forEach((spec) => {
-      if (spec.placeholder) {
-        grid.append(placeholderTile(spec));
-        return;
-      }
-      if (spec.promptId && PROMPT_PACKS[spec.promptId]) {
-        grid.append(promptTile(spec));
-        return;
-      }
-      const item = findQuickAction(spec.title);
-      if (!item || !openable(item.url)) return;
-      const link = document.createElement("a");
-      link.className = "action-tile";
-      link.setAttribute("href", item.url);
-      link.target = "_blank";
-      link.rel = "noopener noreferrer";
-      const labelText = spec.label || item.title;
-      link.setAttribute("aria-label", labelText + ". Opens in a new tab.");
-      applyTone(link, TONES[spec.tone] || toneForTitle(item.title));
-      const name = document.createElement("p");
-      name.className = "card-title";
-      name.textContent = labelText;
-      link.append(glyph(item.icon || itemIcon(item, "Form")), name);
-      if (item.help) {
-        const help = document.createElement("p");
-        help.className = "card-help";
-        help.textContent = item.help;
-        link.append(help);
-      }
-      if (findForm(item.title)) link.addEventListener("click", () => remember(item.url));
-      grid.append(link);
-    });
     const wrap = document.createElement("div");
-    wrap.append(label, grid);
+    wrap.className = "quick-actions";
+    wrap.append(sectionLabel("Quick actions"));
+    QUICK_GROUPS.forEach((group) => {
+      const section = document.createElement("section");
+      section.className = "quick-group" + (group.id === "prompts" ? " quick-group-split" : "");
+      const heading = document.createElement("h3");
+      heading.className = "quick-subhead";
+      heading.textContent = group.title;
+      const grid = document.createElement("div");
+      grid.className = "action-grid";
+      group.actions.forEach((spec) => {
+        const tile = quickActionTile(spec);
+        if (tile) grid.append(tile);
+      });
+      section.append(heading, grid);
+      wrap.append(section);
+    });
     return wrap;
+  }
+
+  function quickActionTile(spec) {
+    if (spec.placeholder) return placeholderTile(spec);
+    if (spec.promptId && PROMPT_PACKS[spec.promptId]) return promptTile(spec);
+    const item = findQuickAction(spec.title);
+    if (!item || !openable(item.url)) return null;
+    const link = document.createElement("a");
+    link.className = "action-tile";
+    link.setAttribute("href", item.url);
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    const labelText = spec.label || item.title;
+    link.setAttribute("aria-label", labelText + ". Opens in a new tab.");
+    applyTone(link, TONES[spec.tone] || toneForTitle(item.title));
+    const name = document.createElement("p");
+    name.className = "card-title";
+    name.textContent = labelText;
+    link.append(glyph(item.icon || itemIcon(item, "Form")), name);
+    if (item.help) {
+      const help = document.createElement("p");
+      help.className = "card-help";
+      help.textContent = item.help;
+      link.append(help);
+    }
+    if (findForm(item.title)) link.addEventListener("click", () => remember(item.url));
+    return link;
   }
 
   function promptTile(spec) {
