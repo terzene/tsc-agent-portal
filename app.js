@@ -1744,6 +1744,18 @@
     fillButton.type = "button";
     fillButton.className = "eval-primary";
     fillButton.textContent = "Fill it in";
+    const geminiButton = document.createElement("button");
+    geminiButton.type = "button";
+    geminiButton.className = "intake-gemini";
+    geminiButton.textContent = "Copy prompt & open Gemini";
+    const geminiHint = document.createElement("p");
+    geminiHint.className = "intake-gemini-hint";
+    geminiHint.textContent = "Paste, then attach your photos/files in Gemini.";
+    const promptBox = document.createElement("textarea");
+    promptBox.className = "intake-prompt-fallback";
+    promptBox.readOnly = true;
+    promptBox.tabIndex = -1;
+    promptBox.setAttribute("aria-hidden", "true");
     const spinner = document.createElement("p");
     spinner.className = "intake-spinner";
     spinner.hidden = true;
@@ -1764,7 +1776,7 @@
     const formWrap = document.createElement("div");
     formWrap.id = "intake-form";
     formWrap.hidden = true;
-    scroller.append(notesLabel, notesBox, stepLinks, fileLabel, fileList, fillButton, spinner, aiStatus, review, myself, formWrap);
+    scroller.append(notesLabel, notesBox, stepLinks, fileLabel, fileList, fillButton, geminiButton, geminiHint, promptBox, spinner, aiStatus, review, myself, formWrap);
 
     Intake.sections.forEach((section) => {
       const block = document.createElement("section");
@@ -2104,7 +2116,7 @@
     function friendlyError(payload) {
       const text = payload && typeof payload.error === "string" ? payload.error.replace(/\s+/g, " ").trim() : "";
       if (!text || text.length > 280 || /gemini/i.test(text) || /<[a-z!]/i.test(text)) {
-        return "Couldn't fill it this time. Try again, or fill it in yourself.";
+        return "Couldn't fill it this time. Try again, use Gemini, or fill it in yourself.";
       }
       return text;
     }
@@ -2147,6 +2159,7 @@
           if (item.url) URL.revokeObjectURL(item.url);
           intakeAttached.splice(index, 1);
           renderFiles();
+          refreshGeminiChoice();
         });
         row.append(name, remove);
         fileList.append(row);
@@ -2161,6 +2174,7 @@
         intakeAttached.push({ file: file, url: url });
       });
       renderFiles();
+      refreshGeminiChoice();
     }
     function mimeForFile(file) {
       const name = String(file.name || "").toLowerCase();
@@ -2242,6 +2256,42 @@
         reader.readAsDataURL(file);
       });
     }
+    function intakePromptText() {
+      return MODEL_LINE + "\n\n" + Intake.promptBody(notesBox.value, intakeAttached.map((item) => item.file.name));
+    }
+    function canShareIntakeFiles() {
+      if (!intakeAttached.length || !navigator.share || typeof navigator.canShare !== "function") return false;
+      try {
+        return navigator.canShare({ files: intakeAttached.map((item) => item.file) });
+      } catch (error) {
+        return false;
+      }
+    }
+    function refreshGeminiChoice() {
+      const share = canShareIntakeFiles();
+      geminiButton.textContent = share ? "Share to Gemini" : "Copy prompt & open Gemini";
+      geminiHint.textContent = share
+        ? "Pick Gemini in the share sheet."
+        : "Paste, then attach your photos/files in Gemini.";
+    }
+    async function openGeminiYourself() {
+      const text = intakePromptText();
+      promptBox.value = text;
+      if (canShareIntakeFiles()) {
+        try {
+          await navigator.share({
+            title: "Listing intake",
+            text: text,
+            files: intakeAttached.map((item) => item.file),
+          });
+          aiStatus.textContent = "Pick Gemini in the share sheet, then send.";
+          return;
+        } catch (error) {
+          if (error && error.name === "AbortError") return;
+        }
+      }
+      await copyPrompt(promptBox, aiStatus, true, Intake.GEMINI_URL);
+    }
     async function filesForUpload() {
       const prepared = [];
       for (let i = 0; i < intakeAttached.length; i += 1) {
@@ -2260,7 +2310,7 @@
       const config = Intake.aiConfig || {};
       const url = String(config.url || "").trim();
       if (!url) {
-        aiStatus.textContent = "Couldn't fill it this time. Try again, or fill it in yourself.";
+        aiStatus.textContent = "Couldn't fill it this time. Try again, use Gemini, or fill it in yourself.";
         return;
       }
       const total = intakeAttached.reduce((sum, item) => sum + item.file.size, 0);
@@ -2294,10 +2344,10 @@
           return;
         }
         if (!applyParsedText(JSON.stringify(payload.intake))) {
-          aiStatus.textContent = "Couldn't fill it this time. Try again, or fill it in yourself.";
+          aiStatus.textContent = "Couldn't fill it this time. Try again, use Gemini, or fill it in yourself.";
         }
       } catch (error) {
-        aiStatus.textContent = "Couldn't fill it this time. Try again, or fill it in yourself.";
+        aiStatus.textContent = "Couldn't fill it this time. Try again, use Gemini, or fill it in yourself.";
       } finally {
         fillButton.disabled = false;
         spinner.hidden = true;
@@ -2381,6 +2431,7 @@
     }
 
     renderFiles();
+    refreshGeminiChoice();
     notesBox.addEventListener("input", scheduleSave);
     function onPickFiles(event) {
       addIntakeFiles(event.target.files);
@@ -2389,6 +2440,9 @@
     fileInput.addEventListener("change", onPickFiles);
     fillButton.addEventListener("click", () => {
       fillWithAi();
+    });
+    geminiButton.addEventListener("click", () => {
+      openGeminiYourself();
     });
     myself.addEventListener("click", showForm);
     if (dictate) {
