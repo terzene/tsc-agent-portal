@@ -276,6 +276,47 @@
     return INSTRUCTIONS + "\n" + catalog() + "\n\nAGENT NOTES\nThe paste may include messy voice-to-text notes and a structured data sheet. The structured sheet wins on any conflict. Also read any photos, PDFs, or documents attached with this prompt (handwritten intake, tax record, data sheet). If there are no typed notes, use the files alone.\n---\n" + noteBlock + files;
   }
 
+  function plainFieldLine(field) {
+    var label = field.num ? field.num + ") " + field.label : field.label;
+    if (field.type !== "multi" && field.type !== "single") return label;
+    var line = label + ". Choose from: " + field.options.join(", ") + ".";
+    if (field.type === "single") return line + " Choose one.";
+    if (field.max) return line + " Up to " + field.max + ".";
+    return line;
+  }
+
+  function plainPrompt(notes, fileNames) {
+    var names = Array.isArray(fileNames) ? fileNames.map(function (name) { return String(name || "").trim(); }).filter(Boolean) : [];
+    var typed = String(notes || "").replace(/^\s+|\s+$/g, "");
+    var lines = [
+      "Read my notes and any attached photos or files. Fill out The Sold Collective Listing Intake form.",
+      "",
+      "Use every field below, in this order, under these section headings. Write each answer as \"Field: value\". If something is missing from my notes and files, write NEEDS INPUT. Do not use JSON. Do not use code blocks. Do not add commentary.",
+      "",
+    ];
+    sections.forEach(function (section) {
+      lines.push(section.title);
+      section.fields.forEach(function (field) {
+        lines.push(plainFieldLine(field));
+      });
+      lines.push("");
+    });
+    lines.push("After the form, list every field you marked NEEDS INPUT.");
+    lines.push("Then add this line:");
+    lines.push("Send this to operations@thesoldcollective.com");
+    lines.push("");
+    lines.push("MY NOTES");
+    lines.push("---");
+    lines.push(typed || (names.length ? "(No typed notes. Read the attached files.)" : ""));
+    if (names.length) {
+      lines.push("");
+      lines.push("ATTACHED FILES");
+      lines.push("Read every attached photo, PDF, and document, including handwriting.");
+      names.forEach(function (name) { lines.push("- " + name); });
+    }
+    return lines.join("\n");
+  }
+
   function parse(text, current, day) {
     const found = extractJson(text);
     if (!found) return { ok: false, values: current, needs: {}, review: [] };
@@ -626,6 +667,7 @@
     summary: summary,
     fitMailto: fitMailto,
     promptBody: promptBody,
+    plainPrompt: plainPrompt,
     parse: parse,
     cleanText: cleanText,
     aiConfig: {
