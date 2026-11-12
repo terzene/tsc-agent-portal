@@ -24,7 +24,7 @@
   const QUICK_ACTIONS = [
     { label: "Offer to Purchase", title: "Offer to Purchase", tone: "listings" },
     { label: "BAA / CIS & Disclosures", title: "BAA / CIS & Disclosures", tone: "buyers" },
-    { label: "Home Eval", placeholder: true, tone: "rentals" },
+    { label: "Home Eval", homeEval: true, tone: "rentals" },
     { label: "Appt Prep", title: "AI Prompt Listing Appt Prep", tone: "tools" },
     { label: "Local Market", title: "Local Market", tone: "market" },
     { label: "New Listing Paperwork", title: "New Listing Paperwork", tone: "listings" },
@@ -108,6 +108,7 @@
   const state = {
     data: null,
     quotes: [],
+    homeEval: null,
     view: "home",
     query: "",
     scrollTruths: false,
@@ -310,15 +311,17 @@
       panel.replaceChildren(loadingNode());
     }
     try {
-      const [response, quoteResponse] = await Promise.all([
+      const [response, quoteResponse, evalResponse] = await Promise.all([
         fetch("data/portal.json", { cache: "no-cache" }),
         fetch("data/stoic-quotes.json", { cache: "no-cache" }),
+        fetch("data/home-eval.json", { cache: "no-cache" }),
       ]);
       if (!response.ok) throw new Error("Could not load portal data");
       const data = await response.json();
       validateData(data);
       state.data = data;
       state.quotes = quoteResponse.ok ? validQuotes(await quoteResponse.json()) : [];
+      state.homeEval = evalResponse.ok ? validHomeEval(await evalResponse.json()) : null;
       applyColors(data.siteColors);
       syncNav();
       render();
@@ -559,6 +562,10 @@
         grid.append(placeholderTile(spec));
         return;
       }
+      if (spec.homeEval) {
+        grid.append(homeEvalTile(spec));
+        return;
+      }
       const item = findQuickAction(spec.title);
       if (!item || !openable(item.url)) return;
       const link = document.createElement("a");
@@ -585,6 +592,234 @@
     const wrap = document.createElement("div");
     wrap.append(label, grid);
     return wrap;
+  }
+
+  function homeEvalTile(spec) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "action-tile";
+    button.setAttribute("aria-label", "Home Eval. Copy the home price prompt, then paste it into Gemini.");
+    applyTone(button, TONES[spec.tone] || TONES.rentals);
+    const name = document.createElement("p");
+    name.className = "card-title";
+    name.textContent = spec.label;
+    const help = document.createElement("p");
+    help.className = "card-help";
+    help.textContent = "Copy the home price prompt, then paste it into Gemini.";
+    button.append(glyph("Spark"), name, help);
+    button.addEventListener("click", () => openHomeEval());
+    return button;
+  }
+
+  function validHomeEval(parsed) {
+    if (!parsed || typeof parsed.prompt !== "string" || !parsed.prompt.trim()) return null;
+    if (!Array.isArray(parsed.fields) || !parsed.fields.length) return null;
+    if (typeof parsed.sourceUrl !== "string" || !openable(parsed.sourceUrl)) return null;
+    if (typeof parsed.geminiUrl !== "string" || !openable(parsed.geminiUrl)) return null;
+    return parsed;
+  }
+
+  function homeEvalValues(form) {
+    const values = {};
+    form.querySelectorAll("[data-eval-field]").forEach((input) => {
+      values[input.dataset.evalField] = input.value;
+    });
+    return values;
+  }
+
+  function fillHomeEvalPrompt(pack, values) {
+    let text = pack.prompt;
+    pack.fields.forEach((field) => {
+      const value = String(values[field.id] || "").replace(/\s+/g, " ").trim();
+      if (!value || !field.token || !text.includes(field.token)) return;
+      text = text.replace(field.token, value);
+    });
+    return text;
+  }
+
+  function openHomeEval() {
+    const existing = document.getElementById("home-eval");
+    if (existing) existing.remove();
+    const pack = state.homeEval;
+    const resource = findResource("AI Prompt Home Price Eval");
+    const sourceUrl = (pack && pack.sourceUrl) || (resource && resource.url) || "";
+    const sheet = document.createElement("div");
+    sheet.id = "home-eval";
+    sheet.className = "eval-sheet";
+    const card = document.createElement("div");
+    card.className = "eval-card";
+    card.setAttribute("role", "dialog");
+    card.setAttribute("aria-modal", "true");
+    card.setAttribute("aria-labelledby", "home-eval-title");
+    const head = document.createElement("div");
+    head.className = "eval-head";
+    const title = document.createElement("h2");
+    title.id = "home-eval-title";
+    title.textContent = "Home Eval";
+    const close = document.createElement("button");
+    close.type = "button";
+    close.className = "icon-btn";
+    close.setAttribute("aria-label", "Close Home Eval");
+    close.textContent = "Close";
+    close.addEventListener("click", () => sheet.remove());
+    head.append(title, close);
+    card.append(head);
+    if (!pack) {
+      const missing = document.createElement("p");
+      missing.className = "eval-note";
+      missing.textContent = "The prompt text could not be loaded, so nothing was copied. Open the original doc instead.";
+      card.append(missing);
+      if (openable(sourceUrl)) card.append(evalLink(sourceUrl, "Open the original doc"));
+      sheet.append(card);
+      document.body.append(sheet);
+      close.focus();
+      return;
+    }
+    const note = document.createElement("p");
+    note.className = "eval-note";
+    note.textContent = "This is the prompt from AI Prompt Home Price Eval. Copy it, then paste it into Gemini. This app does not paste it for you.";
+    card.append(note);
+    const guide = document.createElement("details");
+    guide.className = "eval-guide";
+    const summary = document.createElement("summary");
+    summary.textContent = "Notes from the original doc";
+    const guideText = document.createElement("p");
+    guideText.textContent = pack.intro || "";
+    guide.append(summary, guideText);
+    card.append(guide);
+    const form = document.createElement("form");
+    form.className = "eval-fields";
+    form.addEventListener("submit", (event) => event.preventDefault());
+    pack.fields.forEach((field) => {
+      const label = document.createElement("label");
+      const labelText = document.createElement("span");
+      labelText.textContent = field.label;
+      const input = document.createElement(field.multiline ? "textarea" : "input");
+      input.dataset.evalField = field.id;
+      if (!field.multiline) input.type = "text";
+      input.placeholder = field.token;
+      if (field.multiline) input.rows = 3;
+      input.addEventListener("input", () => {
+        promptBox.value = fillHomeEvalPrompt(pack, homeEvalValues(form));
+      });
+      label.append(labelText, input);
+      form.append(label);
+    });
+    card.append(form);
+    const promptLabel = document.createElement("p");
+    promptLabel.className = "eval-label";
+    promptLabel.textContent = "Prompt to copy";
+    const promptBox = document.createElement("textarea");
+    promptBox.id = "home-eval-prompt";
+    promptBox.className = "eval-prompt";
+    promptBox.readOnly = true;
+    promptBox.value = pack.prompt;
+    card.append(promptLabel, promptBox);
+    const status = document.createElement("p");
+    status.className = "eval-status";
+    status.setAttribute("role", "status");
+    const actions = document.createElement("div");
+    actions.className = "eval-actions";
+    const copyButton = document.createElement("button");
+    copyButton.type = "button";
+    copyButton.textContent = "Copy prompt";
+    const openButton = document.createElement("button");
+    openButton.type = "button";
+    openButton.className = "ghost";
+    openButton.textContent = "Copy & open Gemini";
+    actions.append(copyButton, openButton);
+    const links = document.createElement("div");
+    links.className = "eval-links";
+    links.append(evalLink(pack.geminiUrl, "Open Gemini"));
+    if (openable(sourceUrl)) links.append(evalLink(sourceUrl, "Original doc"));
+    card.append(status, actions, links);
+    copyButton.addEventListener("click", () => copyHomeEval(promptBox, status, false, pack.geminiUrl));
+    openButton.addEventListener("click", () => copyHomeEval(promptBox, status, true, pack.geminiUrl));
+    sheet.addEventListener("click", (event) => {
+      if (event.target === sheet) sheet.remove();
+    });
+    sheet.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") sheet.remove();
+    });
+    sheet.append(card);
+    document.body.append(sheet);
+    const first = form.querySelector("input, textarea");
+    if (first) first.focus();
+  }
+
+  function evalLink(url, label) {
+    const link = document.createElement("a");
+    link.href = url;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.textContent = label;
+    return link;
+  }
+
+  async function copyHomeEval(promptBox, status, openGemini, geminiUrl) {
+    const text = promptBox.value;
+    const writePromise = startClipboardWrite(text);
+    let popup = null;
+    if (openGemini) {
+      popup = window.open(geminiUrl, "_blank");
+      if (popup) popup.opener = null;
+    }
+    const copied = await finishClipboardWrite(writePromise, promptBox);
+    const blocked = openGemini && !popup;
+    if (copied && openGemini && popup) {
+      setEvalStatus(status, "Prompt copied. Gemini is open in a new tab. Paste the prompt there. This app does not paste it for you.");
+    } else if (copied && blocked) {
+      setEvalStatus(status, "Prompt copied, but Gemini did not open. Use Open Gemini below, then paste the prompt there.");
+    } else if (copied) {
+      setEvalStatus(status, "Prompt copied. Open Gemini and paste it there. This app does not paste it for you.");
+    } else if (blocked) {
+      setEvalStatus(status, "Clipboard was blocked, and Gemini did not open. The prompt below is selected. Copy it, then use Open Gemini and paste it there.");
+    } else if (openGemini && popup) {
+      setEvalStatus(status, "Gemini is open, but the clipboard was blocked. The prompt below is selected. Copy it, then paste it into Gemini.");
+    } else {
+      setEvalStatus(status, "Clipboard was blocked. The prompt below is selected. Copy it, then paste it into Gemini.");
+    }
+    showToast(copied ? "Prompt copied" : "Select the prompt and copy it");
+  }
+
+  function setEvalStatus(status, message) {
+    status.textContent = message;
+  }
+
+  function startClipboardWrite(text) {
+    if (!navigator.clipboard || !window.isSecureContext || typeof navigator.clipboard.writeText !== "function") return null;
+    try {
+      return navigator.clipboard.writeText(text);
+    } catch (error) {
+      return Promise.reject(error);
+    }
+  }
+
+  async function finishClipboardWrite(writePromise, promptBox) {
+    if (writePromise) {
+      try {
+        await writePromise;
+        return true;
+      } catch (error) {
+        /* Fall through to a manual selection. */
+      }
+    }
+    return selectPrompt(promptBox);
+  }
+
+  function selectPrompt(promptBox) {
+    promptBox.focus();
+    promptBox.select();
+    if (typeof promptBox.setSelectionRange === "function") {
+      promptBox.setSelectionRange(0, promptBox.value.length);
+    }
+    let copied = false;
+    try {
+      copied = document.execCommand("copy");
+    } catch (error) {
+      copied = false;
+    }
+    return copied;
   }
 
   function placeholderTile(spec) {
