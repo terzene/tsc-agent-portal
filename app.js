@@ -1744,6 +1744,12 @@
     fillButton.type = "button";
     fillButton.className = "eval-primary";
     fillButton.textContent = "Fill it in";
+    const orDivider = document.createElement("p");
+    orDivider.className = "intake-or";
+    orDivider.textContent = "OR";
+    const diyLabel = document.createElement("p");
+    diyLabel.className = "intake-diy";
+    diyLabel.textContent = "Do it yourself in Gemini";
     const geminiButton = document.createElement("button");
     geminiButton.type = "button";
     geminiButton.className = "intake-gemini";
@@ -1776,7 +1782,7 @@
     const formWrap = document.createElement("div");
     formWrap.id = "intake-form";
     formWrap.hidden = true;
-    scroller.append(notesLabel, notesBox, stepLinks, fileLabel, fileList, fillButton, geminiButton, geminiHint, promptBox, spinner, aiStatus, review, myself, formWrap);
+    scroller.append(notesLabel, notesBox, stepLinks, fileLabel, fileList, fillButton, orDivider, diyLabel, geminiButton, geminiHint, promptBox, spinner, aiStatus, review, myself, formWrap);
 
     Intake.sections.forEach((section) => {
       const block = document.createElement("section");
