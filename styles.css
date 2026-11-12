@@ -1265,13 +1265,49 @@ button:focus-visible,
   line-height: 1.4;
 }
 
-.intake-inline-link {
-  display: inline-block;
-  margin-top: 8px;
-  color: var(--red);
-  font-size: 14px;
+.intake-notes-label {
+  margin: 4px 0 8px;
+  font-size: 18px;
   font-weight: 800;
-  text-decoration: none;
+  letter-spacing: -0.02em;
+}
+
+.intake-add-file {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 48px;
+  margin-top: 10px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.intake-file-x {
+  width: 36px;
+  min-height: 36px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 22px;
+  font-weight: 500;
+  line-height: 1;
+}
+
+#intake-form {
+  margin-top: 8px;
+}
+
+#intake-form[hidden] {
+  display: none;
 }
 
 .intake-ai {
@@ -1355,6 +1391,7 @@ button:focus-visible,
   margin: 8px 0 0;
 }
 
+.intake-scroll .intake-text-btn,
 .intake-ai .intake-text-btn {
   display: inline-flex;
   align-items: center;
@@ -1486,11 +1523,16 @@ button:focus-visible,
   cursor: pointer;
 }
 
-.intake-ai .eval-primary {
+.intake-scroll > .eval-primary {
   width: 100%;
   min-height: 56px;
-  margin-top: 0;
-  font-size: 17px;
+  margin-top: 12px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--red);
+  color: var(--white);
+  font-size: 18px;
+  font-weight: 800;
 }
 
 .intake-ai h3,
@@ -1538,6 +1580,7 @@ button:focus-visible,
 }
 
 .intake-ai textarea,
+#intake-notes,
 .intake-field input,
 .intake-field textarea,
 .intake-filter,
@@ -1551,7 +1594,8 @@ button:focus-visible,
   font-weight: 500;
 }
 
-.intake-ai textarea {
+.intake-ai textarea,
+#intake-notes {
   min-height: 72px;
   resize: vertical;
 }

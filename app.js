@@ -1612,7 +1612,7 @@
   function intakeActionTile(spec) {
     const fromNotes = spec.intake === "notes";
     const help = fromNotes
-      ? "Add notes or a file and fill the form with AI."
+      ? "Add your notes or a file, then send it to Miranda."
       : "Fill it out here and send it to Miranda.";
     const button = document.createElement("button");
     button.type = "button";
@@ -1707,38 +1707,16 @@
 
     const scroller = document.createElement("div");
     scroller.className = "intake-scroll";
-    const intro = document.createElement("p");
-    intro.className = "intake-intro";
-    intro.textContent = restored
-      ? "Draft restored on this phone. Send it to Miranda when it's ready."
-      : "Fill this in and send it to Miranda. A draft stays on this phone until you clear it.";
-    scroller.append(intro);
-
-    const pdfItem = findResource(Intake.PDF_TITLE);
-    if (pdfItem && openable(pdfItem.url)) {
-      const pdfLink = document.createElement("a");
-      pdfLink.className = "intake-inline-link";
-      pdfLink.href = pdfItem.url;
-      pdfLink.target = "_blank";
-      pdfLink.rel = "noopener noreferrer";
-      pdfLink.textContent = "Open the PDF instead";
-      scroller.append(pdfLink);
-    }
-
-    const ai = document.createElement("details");
-    ai.className = "intake-ai";
-    ai.id = "intake-from-notes";
-    ai.open = !!(options && options.focusNotes) || !!(draft.rawNotes.trim() || draft.aiPaste.trim() || intakeAttached.length);
-    const aiSummary = document.createElement("summary");
-    aiSummary.textContent = "Have notes? Let AI fill this for you";
-    const steps = document.createElement("div");
-    steps.className = "intake-steps";
+    const notesLabel = document.createElement("p");
+    notesLabel.className = "intake-notes-label";
+    notesLabel.id = "intake-notes-label";
+    notesLabel.textContent = "Add your notes";
     const notesBox = document.createElement("textarea");
     notesBox.id = "intake-notes";
-    notesBox.rows = 4;
-    notesBox.placeholder = "Paste or dictate your notes. A file alone is fine too.";
+    notesBox.rows = 5;
+    notesBox.placeholder = "Paste notes, or add a photo or file below.";
     notesBox.value = draft.rawNotes;
-    notesBox.setAttribute("aria-label", "Paste or dictate your notes");
+    notesBox.setAttribute("aria-labelledby", "intake-notes-label");
     notesBox.autocomplete = "off";
     const stepLinks = document.createElement("p");
     stepLinks.className = "intake-mini";
@@ -1751,31 +1729,21 @@
       dictate.textContent = "Dictate";
       stepLinks.append(dictate);
     }
-    const cameraLabel = document.createElement("label");
-    cameraLabel.className = "intake-text-btn";
-    cameraLabel.append(document.createTextNode("Take a photo"));
-    const cameraInput = document.createElement("input");
-    cameraInput.type = "file";
-    cameraInput.className = "intake-file-input";
-    cameraInput.accept = "image/*";
-    cameraInput.setAttribute("capture", "environment");
-    cameraLabel.append(cameraInput);
     const fileLabel = document.createElement("label");
-    fileLabel.className = "intake-text-btn";
-    fileLabel.append(document.createTextNode("Add a photo, PDF, or doc"));
+    fileLabel.className = "intake-add-file";
+    fileLabel.append(document.createTextNode("Add photo / file"));
     const fileInput = document.createElement("input");
     fileInput.type = "file";
     fileInput.className = "intake-file-input";
     fileInput.multiple = true;
     fileInput.accept = "image/*,.pdf,.doc,.docx,.txt,.heic,.heif,application/pdf";
     fileLabel.append(fileInput);
-    stepLinks.append(cameraLabel, fileLabel);
     const fileList = document.createElement("ul");
     fileList.className = "intake-files";
     const fillButton = document.createElement("button");
     fillButton.type = "button";
     fillButton.className = "eval-primary";
-    fillButton.textContent = "Fill the form with AI";
+    fillButton.textContent = "Fill it in";
     const spinner = document.createElement("p");
     spinner.className = "intake-spinner";
     spinner.hidden = true;
@@ -1789,32 +1757,14 @@
     const review = document.createElement("div");
     review.className = "intake-review";
     review.hidden = true;
-    const fallback = document.createElement("div");
-    fallback.className = "intake-fallback";
-    fallback.hidden = true;
-    const fallbackLink = document.createElement("button");
-    fallbackLink.type = "button";
-    fallbackLink.className = "intake-text-btn";
-    fallbackLink.textContent = "Copy prompt and open Gemini";
-    const pasteBox = document.createElement("textarea");
-    pasteBox.id = "intake-ai-result";
-    pasteBox.rows = 3;
-    pasteBox.placeholder = "Paste Gemini's answer here";
-    pasteBox.value = draft.aiPaste;
-    pasteBox.setAttribute("aria-label", "Paste Gemini's answer here");
-    const fallbackFill = document.createElement("button");
-    fallbackFill.type = "button";
-    fallbackFill.className = "intake-text-btn";
-    fallbackFill.textContent = "Fill from that answer";
-    const promptBox = document.createElement("textarea");
-    promptBox.className = "intake-prompt-fallback";
-    promptBox.readOnly = true;
-    promptBox.tabIndex = -1;
-    promptBox.setAttribute("aria-hidden", "true");
-    fallback.append(fallbackLink, pasteBox, fallbackFill, promptBox);
-    steps.append(notesBox, stepLinks, fileList, fillButton, spinner, aiStatus, review, fallback);
-    ai.append(aiSummary, steps);
-    scroller.append(ai);
+    const myself = document.createElement("button");
+    myself.type = "button";
+    myself.className = "intake-text-btn";
+    myself.textContent = "Fill it in myself";
+    const formWrap = document.createElement("div");
+    formWrap.id = "intake-form";
+    formWrap.hidden = true;
+    scroller.append(notesLabel, notesBox, stepLinks, fileLabel, fileList, fillButton, spinner, aiStatus, review, myself, formWrap);
 
     Intake.sections.forEach((section) => {
       const block = document.createElement("section");
@@ -1825,8 +1775,9 @@
       grid.className = "intake-fields";
       section.fields.forEach((field) => grid.append(renderIntakeField(field)));
       block.append(heading, grid);
-      scroller.append(block);
+      formWrap.append(block);
     });
+    if (formHasAnswers()) formWrap.hidden = false;
 
     const sendBar = document.createElement("div");
     sendBar.className = "intake-send";
@@ -1888,9 +1839,8 @@
       storageSet(Intake.DRAFT_KEY, JSON.stringify({
         values: values,
         rawNotes: notesBox.value,
-        aiPaste: pasteBox.value,
+        aiPaste: "",
       }));
-      if (!intro.textContent.includes("Draft saved")) intro.textContent = "Draft saved on this phone.";
     }
     function closeSheet() {
       window.clearTimeout(saveTimer);
@@ -2122,7 +2072,9 @@
       if (!filled && !highlights) line = "Nothing new was filled in. Try again.";
       else if (highlights) line += " Check the highlighted ones.";
       aiStatus.textContent = line;
-      aiStatus.scrollIntoView({ block: "nearest" });
+      showForm();
+      const highlighted = scroller.querySelector(".is-needs");
+      if (highlighted) highlighted.scrollIntoView({ block: "center" });
       return true;
     }
     function countChangedFields(before, after) {
@@ -2138,12 +2090,41 @@
       if (field.type === "multi") return (value || []).join("\n");
       return String(value || "").trim();
     }
-    function showFallback(message) {
-      aiStatus.textContent = message;
-      fallback.hidden = false;
+    function showForm() {
+      formWrap.hidden = false;
+      formWrap.scrollIntoView({ block: "start" });
     }
-    function intakePromptText() {
-      return MODEL_LINE + "\n\n" + Intake.promptBody(notesBox.value, intakeAttached.map((item) => item.file.name));
+    function formHasAnswers() {
+      return Intake.fields.some((field) => {
+        if (field.type === "date") return false;
+        if (field.type === "multi") return (values[field.id] || []).length > 0;
+        return String(values[field.id] || "").trim().length > 0;
+      });
+    }
+    function friendlyError(payload) {
+      const text = payload && typeof payload.error === "string" ? payload.error.replace(/\s+/g, " ").trim() : "";
+      if (!text || text.length > 280 || /gemini/i.test(text) || /<[a-z!]/i.test(text)) {
+        return "Couldn't fill it this time. Try again, or fill it in yourself.";
+      }
+      return text;
+    }
+    function readServerPayload(raw) {
+      const text = String(raw || "").trim();
+      if (!text) return null;
+      try {
+        return JSON.parse(text);
+      } catch (error) {
+        const start = text.indexOf("{");
+        const end = text.lastIndexOf("}");
+        if (start >= 0 && end > start) {
+          try {
+            return JSON.parse(text.slice(start, end + 1));
+          } catch (inner) {
+            return null;
+          }
+        }
+        return null;
+      }
     }
     function renderFiles() {
       fileList.replaceChildren();
@@ -2159,9 +2140,9 @@
         name.textContent = item.file.name;
         const remove = document.createElement("button");
         remove.type = "button";
-        remove.className = "intake-text-btn";
+        remove.className = "intake-file-x";
         remove.setAttribute("aria-label", "Remove " + item.file.name);
-        remove.textContent = "Remove";
+        remove.textContent = "\u00d7";
         remove.addEventListener("click", () => {
           if (item.url) URL.revokeObjectURL(item.url);
           intakeAttached.splice(index, 1);
@@ -2181,6 +2162,70 @@
       });
       renderFiles();
     }
+    function mimeForFile(file) {
+      const name = String(file.name || "").toLowerCase();
+      if (name.endsWith(".pdf")) return "application/pdf";
+      if (file.type === "application/pdf") return "application/pdf";
+      if (name.endsWith(".png")) return "image/png";
+      if (name.endsWith(".jpg") || name.endsWith(".jpeg") || file.type === "image/jpg") return "image/jpeg";
+      if (name.endsWith(".webp")) return "image/webp";
+      if (name.endsWith(".gif")) return "image/gif";
+      if (name.endsWith(".heic")) return "image/heic";
+      if (name.endsWith(".heif")) return "image/heif";
+      if (name.endsWith(".docx")) return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+      if (name.endsWith(".doc")) return "application/msword";
+      if (name.endsWith(".txt")) return "text/plain";
+      if (file.type && file.type.indexOf("image/") === 0) return file.type;
+      return file.type || "application/octet-stream";
+    }
+    function isCompressibleImage(file) {
+      const mime = mimeForFile(file);
+      return mime === "image/jpeg" || mime === "image/png" || mime === "image/webp" || mime === "image/gif";
+    }
+    function compressImage(file) {
+      return new Promise((resolve) => {
+        const url = URL.createObjectURL(file);
+        const image = new Image();
+        image.onload = () => {
+          const max = 1600;
+          let width = image.naturalWidth || image.width;
+          let height = image.naturalHeight || image.height;
+          const tooWide = width > max || height > max;
+          if (!tooWide && mimeForFile(file) === "image/jpeg" && file.size < 900000) {
+            URL.revokeObjectURL(url);
+            resolve(file);
+            return;
+          }
+          const scale = tooWide ? Math.min(max / width, max / height) : 1;
+          width = Math.max(1, Math.round(width * scale));
+          height = Math.max(1, Math.round(height * scale));
+          const canvas = document.createElement("canvas");
+          canvas.width = width;
+          canvas.height = height;
+          const context = canvas.getContext("2d");
+          if (!context) {
+            URL.revokeObjectURL(url);
+            resolve(file);
+            return;
+          }
+          context.drawImage(image, 0, 0, width, height);
+          canvas.toBlob((blob) => {
+            URL.revokeObjectURL(url);
+            if (!blob) {
+              resolve(file);
+              return;
+            }
+            const base = String(file.name || "photo").replace(/\.[^.]+$/, "");
+            resolve(new File([blob], base + ".jpg", { type: "image/jpeg", lastModified: Date.now() }));
+          }, "image/jpeg", 0.8);
+        };
+        image.onerror = () => {
+          URL.revokeObjectURL(url);
+          resolve(file);
+        };
+        image.src = url;
+      });
+    }
     function fileToPayload(file) {
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -2189,13 +2234,22 @@
           const base64 = raw.indexOf(",") >= 0 ? raw.split(",")[1] : raw;
           resolve({
             name: file.name,
-            mimeType: file.type || "application/octet-stream",
+            mimeType: mimeForFile(file),
             base64: base64,
           });
         };
         reader.onerror = () => reject(reader.error);
         reader.readAsDataURL(file);
       });
+    }
+    async function filesForUpload() {
+      const prepared = [];
+      for (let i = 0; i < intakeAttached.length; i += 1) {
+        const original = intakeAttached[i].file;
+        const file = isCompressibleImage(original) ? await compressImage(original) : original;
+        prepared.push(await fileToPayload(file));
+      }
+      return prepared;
     }
     async function fillWithAi() {
       if (!notesBox.value.trim() && !intakeAttached.length) {
@@ -2206,7 +2260,7 @@
       const config = Intake.aiConfig || {};
       const url = String(config.url || "").trim();
       if (!url) {
-        showFallback("AI fill isn't connected yet. Use Gemini yourself, then paste the answer below.");
+        aiStatus.textContent = "Couldn't fill it this time. Try again, or fill it in yourself.";
         return;
       }
       const total = intakeAttached.reduce((sum, item) => sum + item.file.size, 0);
@@ -2218,10 +2272,7 @@
       spinner.hidden = false;
       aiStatus.textContent = "";
       try {
-        const files = [];
-        for (let i = 0; i < intakeAttached.length; i += 1) {
-          files.push(await fileToPayload(intakeAttached[i].file));
-        }
+        const files = await filesForUpload();
         const fetchOptions = {
           method: "POST",
           headers: { "Content-Type": "text/plain;charset=utf-8" },
@@ -2237,21 +2288,16 @@
         }
         const response = await fetch(url, fetchOptions);
         const raw = await response.text();
-        let payload = null;
-        try {
-          payload = JSON.parse(raw);
-        } catch (error) {
-          payload = null;
-        }
+        const payload = readServerPayload(raw);
         if (!payload || payload.ok === false || !payload.intake) {
-          showFallback((payload && payload.error) || "AI fill didn't work. You can still use Gemini yourself.");
+          aiStatus.textContent = friendlyError(payload);
           return;
         }
         if (!applyParsedText(JSON.stringify(payload.intake))) {
-          showFallback("AI fill came back in a shape the form couldn't use. You can still paste an answer below.");
+          aiStatus.textContent = "Couldn't fill it this time. Try again, or fill it in yourself.";
         }
       } catch (error) {
-        showFallback("AI fill didn't work. Check your connection, or use Gemini yourself.");
+        aiStatus.textContent = "Couldn't fill it this time. Try again, or fill it in yourself.";
       } finally {
         fillButton.disabled = false;
         spinner.hidden = true;
@@ -2341,32 +2387,10 @@
       event.target.value = "";
     }
     fileInput.addEventListener("change", onPickFiles);
-    cameraInput.addEventListener("change", onPickFiles);
-    pasteBox.addEventListener("input", scheduleSave);
     fillButton.addEventListener("click", () => {
       fillWithAi();
     });
-    fallbackLink.addEventListener("click", () => {
-      if (!notesBox.value.trim() && !intakeAttached.length) {
-        aiStatus.textContent = "Add notes or a file first.";
-        notesBox.focus();
-        return;
-      }
-      promptBox.value = intakePromptText();
-      copyPrompt(promptBox, aiStatus, true, Intake.GEMINI_URL);
-    });
-    fallbackFill.addEventListener("click", () => {
-      const text = pasteBox.value.trim();
-      if (!text) {
-        aiStatus.textContent = "Paste Gemini's answer first.";
-        pasteBox.focus();
-        return;
-      }
-      if (!applyParsedText(text)) {
-        aiStatus.textContent = "That didn't look like Gemini's answer. Paste the whole reply.";
-        pasteBox.focus();
-      }
-    });
+    myself.addEventListener("click", showForm);
     if (dictate) {
       dictate.addEventListener("click", () => {
         if (intakeRecognizer) {
