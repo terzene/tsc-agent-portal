@@ -21,11 +21,33 @@
     market: { ink: "#5E807C", bright: "#9BB8B4", tint: "#F6F8F8", dark: "#2A2828" },
     dash: { ink: "#6A6794", bright: "#B0ADC9", tint: "#F7F7FA", dark: "#2A2828" },
   };
+  const MODEL_LINE =
+    "Use the newest, most capable model available and turn on its thinking / extended reasoning mode (sometimes labeled Thinking, Pro, Deep Think or complex problems) before pasting this prompt.";
+  const PROMPT_PACKS = {
+    "home-eval": {
+      id: "home-eval",
+      label: "Home Eval",
+      file: "data/home-eval.json",
+      resourceTitle: "AI Prompt Home Price Eval",
+      sourceName: "AI Prompt Home Price Eval",
+      icon: "Spark",
+      tileHelp: "Copy the home price prompt, then paste it into Gemini.",
+    },
+    "appt-prep": {
+      id: "appt-prep",
+      label: "Appt Prep",
+      file: "data/appt-prep.json",
+      resourceTitle: "AI Prompt Listing Appt Prep",
+      sourceName: "AI Prompt Listing Appt Prep",
+      icon: "Calendar",
+      tileHelp: "Copy the listing appointment prompt, then paste it into Gemini.",
+    },
+  };
   const QUICK_ACTIONS = [
     { label: "Offer to Purchase", title: "Offer to Purchase", tone: "listings" },
     { label: "BAA / CIS & Disclosures", title: "BAA / CIS & Disclosures", tone: "buyers" },
-    { label: "Home Eval", homeEval: true, tone: "rentals" },
-    { label: "Appt Prep", title: "AI Prompt Listing Appt Prep", tone: "tools" },
+    { label: "Home Eval", promptId: "home-eval", tone: "rentals" },
+    { label: "Appt Prep", promptId: "appt-prep", tone: "tools" },
     { label: "Local Market", title: "Local Market", tone: "market" },
     { label: "New Listing Paperwork", title: "New Listing Paperwork", tone: "listings" },
     { label: "Quick Comps", title: "Quick Comps", tone: "playbooks" },
@@ -108,7 +130,7 @@
   const state = {
     data: null,
     quotes: [],
-    homeEval: null,
+    prompts: {},
     view: "home",
     query: "",
     scrollTruths: false,
@@ -311,17 +333,22 @@
       panel.replaceChildren(loadingNode());
     }
     try {
-      const [response, quoteResponse, evalResponse] = await Promise.all([
+      const promptIds = Object.keys(PROMPT_PACKS);
+      const [response, quoteResponse, ...promptResponses] = await Promise.all([
         fetch("data/portal.json", { cache: "no-cache" }),
         fetch("data/stoic-quotes.json", { cache: "no-cache" }),
-        fetch("data/home-eval.json", { cache: "no-cache" }),
+        ...promptIds.map((id) => fetch(PROMPT_PACKS[id].file, { cache: "no-cache" })),
       ]);
       if (!response.ok) throw new Error("Could not load portal data");
       const data = await response.json();
       validateData(data);
       state.data = data;
       state.quotes = quoteResponse.ok ? validQuotes(await quoteResponse.json()) : [];
-      state.homeEval = evalResponse.ok ? validHomeEval(await evalResponse.json()) : null;
+      state.prompts = {};
+      for (let i = 0; i < promptIds.length; i += 1) {
+        const promptResponse = promptResponses[i];
+        state.prompts[promptIds[i]] = promptResponse.ok ? validPromptPack(await promptResponse.json()) : null;
+      }
       applyColors(data.siteColors);
       syncNav();
       render();
@@ -562,8 +589,8 @@
         grid.append(placeholderTile(spec));
         return;
       }
-      if (spec.homeEval) {
-        grid.append(homeEvalTile(spec));
+      if (spec.promptId && PROMPT_PACKS[spec.promptId]) {
+        grid.append(promptTile(spec));
         return;
       }
       const item = findQuickAction(spec.title);
@@ -594,24 +621,25 @@
     return wrap;
   }
 
-  function homeEvalTile(spec) {
+  function promptTile(spec) {
+    const packSpec = PROMPT_PACKS[spec.promptId];
     const button = document.createElement("button");
     button.type = "button";
     button.className = "action-tile";
-    button.setAttribute("aria-label", "Home Eval. Copy the home price prompt, then paste it into Gemini.");
+    button.setAttribute("aria-label", packSpec.label + ". " + packSpec.tileHelp);
     applyTone(button, TONES[spec.tone] || TONES.rentals);
     const name = document.createElement("p");
     name.className = "card-title";
     name.textContent = spec.label;
     const help = document.createElement("p");
     help.className = "card-help";
-    help.textContent = "Copy the home price prompt, then paste it into Gemini.";
-    button.append(glyph("Spark"), name, help);
-    button.addEventListener("click", () => openHomeEval());
+    help.textContent = packSpec.tileHelp;
+    button.append(glyph(packSpec.icon), name, help);
+    button.addEventListener("click", () => openPromptSheet(packSpec));
     return button;
   }
 
-  function validHomeEval(parsed) {
+  function validPromptPack(parsed) {
     if (!parsed || typeof parsed.prompt !== "string" || !parsed.prompt.trim()) return null;
     if (!Array.isArray(parsed.fields) || !parsed.fields.length) return null;
     if (typeof parsed.sourceUrl !== "string" || !openable(parsed.sourceUrl)) return null;
@@ -619,7 +647,7 @@
     return parsed;
   }
 
-  function homeEvalValues(form) {
+  function promptFieldValues(form) {
     const values = {};
     form.querySelectorAll("[data-eval-field]").forEach((input) => {
       values[input.dataset.evalField] = input.value;
@@ -627,7 +655,7 @@
     return values;
   }
 
-  function fillHomeEvalPrompt(pack, values) {
+  function fillPrompt(pack, values) {
     let text = pack.prompt;
     pack.fields.forEach((field) => {
       const value = String(values[field.id] || "").replace(/\s+/g, " ").trim();
@@ -637,29 +665,32 @@
     return text;
   }
 
-  function openHomeEval() {
-    const existing = document.getElementById("home-eval");
-    if (existing) existing.remove();
-    const pack = state.homeEval;
-    const resource = findResource("AI Prompt Home Price Eval");
+  function promptToCopy(pack, values) {
+    return MODEL_LINE + "\n\n" + fillPrompt(pack, values);
+  }
+
+  function openPromptSheet(spec) {
+    document.querySelectorAll(".eval-sheet").forEach((node) => node.remove());
+    const pack = state.prompts[spec.id];
+    const resource = findResource(spec.resourceTitle);
     const sourceUrl = (pack && pack.sourceUrl) || (resource && resource.url) || "";
     const sheet = document.createElement("div");
-    sheet.id = "home-eval";
+    sheet.id = spec.id;
     sheet.className = "eval-sheet";
     const card = document.createElement("div");
     card.className = "eval-card";
     card.setAttribute("role", "dialog");
     card.setAttribute("aria-modal", "true");
-    card.setAttribute("aria-labelledby", "home-eval-title");
+    card.setAttribute("aria-labelledby", spec.id + "-title");
     const head = document.createElement("div");
     head.className = "eval-head";
     const title = document.createElement("h2");
-    title.id = "home-eval-title";
-    title.textContent = "Home Eval";
+    title.id = spec.id + "-title";
+    title.textContent = spec.label;
     const close = document.createElement("button");
     close.type = "button";
     close.className = "icon-btn";
-    close.setAttribute("aria-label", "Close Home Eval");
+    close.setAttribute("aria-label", "Close " + spec.label);
     close.textContent = "Close";
     close.addEventListener("click", () => sheet.remove());
     head.append(title, close);
@@ -677,7 +708,12 @@
     }
     const note = document.createElement("p");
     note.className = "eval-note";
-    note.textContent = "This is the prompt from AI Prompt Home Price Eval. Copy it, then paste it into Gemini. This app does not paste it for you.";
+    note.textContent =
+      "This is the prompt from " +
+      spec.sourceName +
+      ". " +
+      MODEL_LINE +
+      " Copy it, then paste it into Gemini. This app does not paste it for you.";
     card.append(note);
     const guide = document.createElement("details");
     guide.className = "eval-guide";
@@ -700,7 +736,7 @@
       input.placeholder = field.token;
       if (field.multiline) input.rows = 3;
       input.addEventListener("input", () => {
-        promptBox.value = fillHomeEvalPrompt(pack, homeEvalValues(form));
+        promptBox.value = promptToCopy(pack, promptFieldValues(form));
       });
       label.append(labelText, input);
       form.append(label);
@@ -710,14 +746,17 @@
     promptLabel.className = "eval-label";
     promptLabel.textContent = "Prompt to copy";
     const promptBox = document.createElement("textarea");
-    promptBox.id = "home-eval-prompt";
+    promptBox.id = spec.id + "-prompt";
     promptBox.className = "eval-prompt";
     promptBox.readOnly = true;
-    promptBox.value = pack.prompt;
+    promptBox.value = promptToCopy(pack, {});
     card.append(promptLabel, promptBox);
     const status = document.createElement("p");
     status.className = "eval-status";
     status.setAttribute("role", "status");
+    const modelLine = document.createElement("p");
+    modelLine.className = "eval-note";
+    modelLine.textContent = MODEL_LINE;
     const actions = document.createElement("div");
     actions.className = "eval-actions";
     const copyButton = document.createElement("button");
@@ -732,9 +771,9 @@
     links.className = "eval-links";
     links.append(evalLink(pack.geminiUrl, "Open Gemini"));
     if (openable(sourceUrl)) links.append(evalLink(sourceUrl, "Original doc"));
-    card.append(status, actions, links);
-    copyButton.addEventListener("click", () => copyHomeEval(promptBox, status, false, pack.geminiUrl));
-    openButton.addEventListener("click", () => copyHomeEval(promptBox, status, true, pack.geminiUrl));
+    card.append(status, modelLine, actions, links);
+    copyButton.addEventListener("click", () => copyPrompt(promptBox, status, false, pack.geminiUrl));
+    openButton.addEventListener("click", () => copyPrompt(promptBox, status, true, pack.geminiUrl));
     sheet.addEventListener("click", (event) => {
       if (event.target === sheet) sheet.remove();
     });
@@ -756,7 +795,7 @@
     return link;
   }
 
-  async function copyHomeEval(promptBox, status, openGemini, geminiUrl) {
+  async function copyPrompt(promptBox, status, openGemini, geminiUrl) {
     const text = promptBox.value;
     const writePromise = startClipboardWrite(text);
     let popup = null;
