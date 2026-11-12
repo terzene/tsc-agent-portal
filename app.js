@@ -48,6 +48,7 @@
       id: "forms",
       title: "Forms",
       actions: [
+        { label: "Listing Intake", intake: true, tone: "listings" },
         { label: "Offer to Purchase", title: "Offer to Purchase", tone: "listings" },
         { label: "BAA / CIS & Disclosures", title: "BAA / CIS & Disclosures", tone: "buyers" },
         { label: "New Listing Paperwork", title: "New Listing Paperwork", tone: "listings" },
@@ -61,6 +62,7 @@
         { label: "Quick Comps", title: "Quick Comps", tone: "playbooks" },
         { label: "Local Market", title: "Local Market", tone: "market" },
         { label: "Appt Prep", promptId: "appt-prep", tone: "tools" },
+        { label: "Listing Intake (AI)", intake: "notes", tone: "ideas" },
       ],
     },
   ];
@@ -151,6 +153,7 @@
 
   let deferredPrompt = null;
   let toastTimer = 0;
+  let intakeRecognizer = null;
 
   state.view = viewFromHash();
   applyTheme(resolveTheme());
@@ -616,6 +619,7 @@
 
   function quickActionTile(spec) {
     if (spec.placeholder) return placeholderTile(spec);
+    if (spec.intake) return intakeActionTile(spec);
     if (spec.promptId && PROMPT_PACKS[spec.promptId]) return promptTile(spec);
     const item = findQuickAction(spec.title);
     if (!item || !openable(item.url)) return null;
@@ -779,14 +783,15 @@
     modelLine.textContent = MODEL_LINE;
     const actions = document.createElement("div");
     actions.className = "eval-actions";
-    const copyButton = document.createElement("button");
-    copyButton.type = "button";
-    copyButton.textContent = "Copy prompt";
     const openButton = document.createElement("button");
     openButton.type = "button";
-    openButton.className = "ghost";
+    openButton.className = "eval-primary";
     openButton.textContent = "Copy & open Gemini";
-    actions.append(copyButton, openButton);
+    const copyButton = document.createElement("button");
+    copyButton.type = "button";
+    copyButton.className = "ghost";
+    copyButton.textContent = "Copy prompt";
+    actions.append(openButton, copyButton);
     const links = document.createElement("div");
     links.className = "eval-links";
     links.append(evalLink(pack.geminiUrl, "Open Gemini"));
@@ -1132,6 +1137,7 @@
   }
 
   function resourceTile(item) {
+    if (window.TSCIntake && item.title === window.TSCIntake.PDF_TITLE) return intakeResourceTile(item);
     const tile = document.createElement("article");
     tile.className = "tile";
     applyTone(tile, toneForTitle(item.title));
@@ -1600,6 +1606,710 @@
       window.matchMedia("(display-mode: fullscreen)").matches ||
       window.navigator.standalone === true
     );
+  }
+
+  function intakeActionTile(spec) {
+    const fromNotes = spec.intake === "notes";
+    const help = fromNotes
+      ? "Paste listing notes, copy the prompt into Gemini, then fill the form."
+      : "Fill it out here and send it to Miranda.";
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "action-tile";
+    button.setAttribute("aria-label", spec.label + ". " + help);
+    applyTone(button, TONES[spec.tone] || TONES.listings);
+    const name = document.createElement("p");
+    name.className = "card-title";
+    name.textContent = spec.label;
+    const note = document.createElement("p");
+    note.className = "card-help";
+    note.textContent = help;
+    button.append(glyph(fromNotes ? "Spark" : "Clipboard"), name, note);
+    button.addEventListener("click", () => openIntakeSheet({ focusNotes: fromNotes }));
+    return button;
+  }
+
+  function intakeResourceTile(item) {
+    const tile = document.createElement("article");
+    tile.className = "tile intake-resource";
+    applyTone(tile, toneForTitle(item.title));
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "tile-link";
+    button.setAttribute("aria-label", "Listing Intake Form. Fill it out in the app and send it to Miranda.");
+    button.append(glyph("Clipboard"), cardCopy("Listing Intake Form", "In the app", "Fill it out here and send it to Miranda."));
+    button.addEventListener("click", () => openIntakeSheet());
+    const pdf = document.createElement("a");
+    pdf.className = "intake-pdf";
+    pdf.href = item.url;
+    pdf.target = "_blank";
+    pdf.rel = "noopener noreferrer";
+    pdf.textContent = "PDF form";
+    tile.append(button, pdf);
+    return tile;
+  }
+
+  function stopIntakeSpeech() {
+    if (!intakeRecognizer) return;
+    try {
+      intakeRecognizer.abort();
+    } catch (error) {
+      /* already stopped */
+    }
+    intakeRecognizer = null;
+  }
+
+  function openIntakeSheet(options) {
+    const Intake = window.TSCIntake;
+    if (!Intake) {
+      showToast("The listing intake form did not load. Reload the app.");
+      return;
+    }
+    stopIntakeSpeech();
+    document.querySelectorAll(".eval-sheet").forEach((node) => node.remove());
+    const day = Intake.today();
+    let stored = null;
+    try {
+      stored = JSON.parse(storageGet(Intake.DRAFT_KEY) || "null");
+    } catch (error) {
+      stored = null;
+    }
+    const draft = Intake.normalizeDraft(stored, day);
+    const values = draft.values;
+    const restored = !!(stored && Intake.draftHasContent(draft, day));
+    const wraps = {};
+    const msgs = {};
+    const hints = {};
+    const inputs = {};
+    const chipSets = {};
+
+    const sheet = document.createElement("div");
+    sheet.className = "eval-sheet intake-sheet";
+    sheet.id = "listing-intake";
+    const card = document.createElement("div");
+    card.className = "eval-card intake-card";
+    card.setAttribute("role", "dialog");
+    card.setAttribute("aria-modal", "true");
+    card.setAttribute("aria-labelledby", "listing-intake-title");
+
+    const head = document.createElement("div");
+    head.className = "intake-head";
+    const title = document.createElement("h2");
+    title.id = "listing-intake-title";
+    title.textContent = "Listing Intake";
+    const close = document.createElement("button");
+    close.type = "button";
+    close.className = "icon-btn";
+    close.setAttribute("aria-label", "Close Listing Intake");
+    close.textContent = "Close";
+    head.append(title, close);
+
+    const scroller = document.createElement("div");
+    scroller.className = "intake-scroll";
+    const intro = document.createElement("p");
+    intro.className = "intake-intro";
+    intro.textContent = restored
+      ? "Draft restored on this phone. Send it to Miranda when it's ready."
+      : "Fill this in and send it to Miranda. A draft stays on this phone until you clear it.";
+    scroller.append(intro);
+
+    const pdfItem = findResource(Intake.PDF_TITLE);
+    if (pdfItem && openable(pdfItem.url)) {
+      const pdfLink = document.createElement("a");
+      pdfLink.className = "intake-inline-link";
+      pdfLink.href = pdfItem.url;
+      pdfLink.target = "_blank";
+      pdfLink.rel = "noopener noreferrer";
+      pdfLink.textContent = "Open the PDF instead";
+      scroller.append(pdfLink);
+    }
+
+    const ai = document.createElement("section");
+    ai.className = "intake-ai";
+    ai.id = "intake-from-notes";
+    const aiTitle = document.createElement("h3");
+    aiTitle.textContent = "Fill from notes (AI)";
+    const aiHelp = document.createElement("p");
+    aiHelp.className = "intake-help";
+    aiHelp.textContent = "Paste or dictate the listing notes. A data sheet can go in the same box. Copy the prompt into Gemini, then paste the answer back.";
+    const notesLabel = document.createElement("label");
+    notesLabel.className = "intake-label";
+    const notesName = document.createElement("span");
+    notesName.textContent = "Listing notes";
+    const notesBox = document.createElement("textarea");
+    notesBox.id = "intake-notes";
+    notesBox.rows = 3;
+    notesBox.placeholder = "Paste notes here. On your phone, the keyboard microphone works too.";
+    notesBox.value = draft.rawNotes;
+    notesBox.autocomplete = "off";
+    notesLabel.append(notesName, notesBox);
+    const aiActions = document.createElement("div");
+    aiActions.className = "intake-row";
+    const geminiButton = document.createElement("button");
+    geminiButton.type = "button";
+    geminiButton.className = "eval-primary";
+    geminiButton.textContent = "Copy & open Gemini";
+    const copyOnly = document.createElement("button");
+    copyOnly.type = "button";
+    copyOnly.className = "ghost";
+    copyOnly.textContent = "Copy prompt";
+    aiActions.append(geminiButton, copyOnly);
+    const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
+    let dictate = null;
+    if (Speech) {
+      dictate = document.createElement("button");
+      dictate.type = "button";
+      dictate.className = "ghost";
+      dictate.textContent = "Dictate";
+      aiActions.append(dictate);
+    }
+    const aiStatus = document.createElement("p");
+    aiStatus.className = "eval-status";
+    aiStatus.setAttribute("role", "status");
+    const modelLine = document.createElement("p");
+    modelLine.className = "intake-help";
+    modelLine.textContent = MODEL_LINE;
+    const promptDetails = document.createElement("details");
+    promptDetails.className = "eval-guide";
+    const promptSummary = document.createElement("summary");
+    promptSummary.textContent = "Prompt to copy";
+    const promptBox = document.createElement("textarea");
+    promptBox.className = "eval-prompt";
+    promptBox.readOnly = true;
+    promptBox.rows = 6;
+    promptBox.value = MODEL_LINE + "\n\n" + Intake.promptBody(notesBox.value);
+    promptDetails.append(promptSummary, promptBox);
+    const pasteLabel = document.createElement("label");
+    pasteLabel.className = "intake-label";
+    const pasteName = document.createElement("span");
+    pasteName.textContent = "Paste AI result";
+    const pasteBox = document.createElement("textarea");
+    pasteBox.id = "intake-ai-result";
+    pasteBox.rows = 4;
+    pasteBox.placeholder = "Paste Gemini's answer here";
+    pasteBox.value = draft.aiPaste;
+    pasteBox.autocomplete = "off";
+    pasteLabel.append(pasteName, pasteBox);
+    const fillButton = document.createElement("button");
+    fillButton.type = "button";
+    fillButton.className = "intake-secondary";
+    fillButton.textContent = "Fill the form";
+    const review = document.createElement("div");
+    review.className = "intake-review";
+    review.hidden = true;
+    ai.append(aiTitle, aiHelp, notesLabel, aiActions, aiStatus, modelLine, promptDetails, pasteLabel, fillButton, review);
+
+    const notesDoc = findResource("AI Prompt Turns Notes Into Listing Intake Form");
+    if (notesDoc && openable(notesDoc.url)) {
+      const original = evalLink(notesDoc.url, "Original notes prompt");
+      original.className = "intake-inline-link";
+      ai.append(original);
+    }
+    scroller.append(ai);
+
+    Intake.sections.forEach((section) => {
+      const block = document.createElement("section");
+      block.className = "intake-section";
+      const heading = document.createElement("h3");
+      heading.textContent = section.title;
+      const grid = document.createElement("div");
+      grid.className = "intake-fields";
+      section.fields.forEach((field) => grid.append(renderIntakeField(field)));
+      block.append(heading, grid);
+      scroller.append(block);
+    });
+
+    const sendBar = document.createElement("div");
+    sendBar.className = "intake-send";
+    const sendStatus = document.createElement("p");
+    sendStatus.className = "eval-status";
+    sendStatus.setAttribute("role", "status");
+    const sendButton = document.createElement("button");
+    sendButton.type = "button";
+    sendButton.className = "intake-send-btn";
+    sendButton.textContent = "Send to Miranda";
+    const sendRow = document.createElement("div");
+    sendRow.className = "intake-row";
+    const shareIntake = document.createElement("button");
+    shareIntake.type = "button";
+    shareIntake.className = "ghost";
+    shareIntake.textContent = "Share";
+    const copyIntake = document.createElement("button");
+    copyIntake.type = "button";
+    copyIntake.className = "ghost";
+    copyIntake.textContent = "Copy";
+    sendRow.append(shareIntake, copyIntake);
+    const preview = document.createElement("div");
+    preview.className = "intake-preview-wrap";
+    preview.hidden = true;
+    const previewTo = document.createElement("p");
+    previewTo.className = "intake-preview-to";
+    const previewSubject = document.createElement("p");
+    previewSubject.className = "intake-preview-subject";
+    const previewBody = document.createElement("textarea");
+    previewBody.id = "intake-email-body";
+    previewBody.className = "intake-preview";
+    previewBody.readOnly = true;
+    previewBody.rows = 14;
+    const clearRow = document.createElement("div");
+    clearRow.className = "intake-row";
+    const clearButton = document.createElement("button");
+    clearButton.type = "button";
+    clearButton.textContent = "Clear draft";
+    const keepButton = document.createElement("button");
+    keepButton.type = "button";
+    keepButton.className = "ghost";
+    keepButton.textContent = "Keep editing";
+    clearRow.append(clearButton, keepButton);
+    preview.append(previewTo, previewSubject, previewBody, clearRow);
+    scroller.append(preview);
+    sendBar.append(sendStatus, sendButton, sendRow);
+    card.append(head, scroller, sendBar);
+    sheet.append(card);
+    refreshConditions();
+    document.body.append(sheet);
+    document.body.style.overflow = "hidden";
+
+    let saveTimer = 0;
+    function scheduleSave() {
+      window.clearTimeout(saveTimer);
+      saveTimer = window.setTimeout(saveDraft, 200);
+    }
+    function saveDraft() {
+      storageSet(Intake.DRAFT_KEY, JSON.stringify({
+        values: values,
+        rawNotes: notesBox.value,
+        aiPaste: pasteBox.value,
+      }));
+      if (!intro.textContent.includes("Draft saved")) intro.textContent = "Draft saved on this phone.";
+    }
+    function closeSheet() {
+      window.clearTimeout(saveTimer);
+      stopIntakeSpeech();
+      document.body.style.overflow = "";
+      sheet.remove();
+    }
+    function renderIntakeField(field) {
+      const wrap = document.createElement("div");
+      wrap.className = "intake-field" + (field.half ? "" : " wide");
+      wrap.dataset.intakeField = field.id;
+      wraps[field.id] = wrap;
+      const hint = document.createElement("p");
+      hint.className = "intake-hint";
+      hints[field.id] = hint;
+      const msg = document.createElement("p");
+      msg.className = "intake-msg";
+      msg.id = "intake-msg-" + field.id;
+      msgs[field.id] = msg;
+      if (field.type === "multi" || field.type === "single") wrap.append(renderChips(field), hint, msg);
+      else wrap.append(renderControl(field), hint, msg);
+      hint.textContent = hintText(field);
+      if (!hint.textContent) hint.hidden = true;
+      return wrap;
+    }
+    function renderControl(field) {
+      const label = document.createElement("label");
+      label.className = "intake-label";
+      if (field.type !== "notes") {
+        const text = document.createElement("span");
+        text.textContent = fieldLabel(field);
+        label.append(text);
+      }
+      const input = document.createElement(field.type === "notes" ? "textarea" : "input");
+      inputs[field.id] = input;
+      input.value = values[field.id] || "";
+      if (field.type === "notes") {
+        input.rows = 5;
+        input.setAttribute("aria-label", field.label);
+      } else if (field.type === "date") {
+        input.type = "date";
+      } else if (field.type === "number") {
+        input.type = "text";
+        input.inputMode = "numeric";
+        input.pattern = "[0-9]*";
+        input.autocomplete = "off";
+        input.enterKeyHint = "done";
+      } else {
+        input.type = "text";
+        input.autocomplete = field.autocomplete || "off";
+        input.enterKeyHint = "next";
+      }
+      if (field.placeholder) input.placeholder = field.placeholder;
+      if (field.id === "address") input.autocapitalize = "words";
+      input.addEventListener("input", () => {
+        let next = input.value;
+        if (field.type === "number") {
+          next = next.replace(/[^\d]/g, "");
+          if (next !== input.value) input.value = next;
+        }
+        values[field.id] = next;
+        clearFieldState(field.id);
+        refreshConditions();
+        scheduleSave();
+      });
+      label.append(input);
+      return label;
+    }
+    function renderChips(field) {
+      const group = document.createElement("div");
+      const legend = document.createElement("p");
+      legend.className = "intake-legend";
+      legend.id = "intake-legend-" + field.id;
+      legend.textContent = fieldLabel(field);
+      const chips = document.createElement("div");
+      chips.className = "intake-chips" + (field.options.length === 2 ? " choice-two" : "");
+      chips.setAttribute("role", "group");
+      chips.setAttribute("aria-labelledby", legend.id);
+      const buttons = [];
+      field.options.forEach((option) => {
+        const chip = document.createElement("button");
+        chip.type = "button";
+        chip.className = "intake-chip";
+        chip.textContent = option;
+        chip.setAttribute("aria-pressed", selected(field, option) ? "true" : "false");
+        chip.addEventListener("click", () => toggleChip(field, option));
+        chips.append(chip);
+        buttons.push(chip);
+      });
+      chipSets[field.id] = buttons;
+      group.append(legend);
+      if (field.options.length > 8) {
+        const filter = document.createElement("input");
+        filter.type = "search";
+        filter.className = "intake-filter";
+        filter.placeholder = "Find one";
+        filter.setAttribute("aria-label", "Filter " + field.label);
+        filter.autocomplete = "off";
+        filter.addEventListener("input", () => {
+          const query = filter.value.trim().toLowerCase();
+          let shown = 0;
+          buttons.forEach((chip) => {
+            const on = chip.getAttribute("aria-pressed") === "true";
+            const match = chip.textContent.toLowerCase().includes(query);
+            chip.hidden = !!query && !on && !match;
+            if (!chip.hidden) shown += 1;
+          });
+          empty.hidden = shown > 0;
+        });
+        const empty = document.createElement("p");
+        empty.className = "intake-hint";
+        empty.hidden = true;
+        empty.textContent = "No matching options.";
+        group.append(filter, chips, empty);
+      } else group.append(chips);
+      return group;
+    }
+    function toggleChip(field, option) {
+      if (field.type === "single") {
+        values[field.id] = values[field.id] === option ? "" : option;
+      } else {
+        const current = (values[field.id] || []).slice();
+        const index = current.indexOf(option);
+        if (index >= 0) current.splice(index, 1);
+        else if (field.max && current.length >= field.max) {
+          msgs[field.id].textContent = "Up to " + field.max + ". Unselect one to add another.";
+          wraps[field.id].classList.add("is-invalid");
+          return;
+        } else current.push(option);
+        values[field.id] = current;
+      }
+      clearFieldState(field.id);
+      syncChips(field);
+      hints[field.id].textContent = hintText(field);
+      hints[field.id].hidden = !hints[field.id].textContent;
+      refreshConditions();
+      scheduleSave();
+    }
+    function syncChips(field) {
+      (chipSets[field.id] || []).forEach((chip) => {
+        chip.setAttribute("aria-pressed", selected(field, chip.textContent) ? "true" : "false");
+      });
+    }
+    function selected(field, option) {
+      if (field.type === "single") return values[field.id] === option;
+      return (values[field.id] || []).indexOf(option) !== -1;
+    }
+    function fieldLabel(field) {
+      return (field.num ? field.num + ") " : "") + field.label;
+    }
+    function hintText(field) {
+      const base = field.hint || "";
+      if (field.type !== "multi") return base;
+      const count = (values[field.id] || []).length;
+      return (base ? base + " " : "") + count + " selected.";
+    }
+    function clearFieldState(id) {
+      if (!wraps[id]) return;
+      wraps[id].classList.remove("is-invalid", "is-needs");
+      msgs[id].textContent = "";
+    }
+    function refreshConditions() {
+      Intake.fields.forEach((field) => {
+        if (!wraps[field.id]) return;
+        wraps[field.id].hidden = !Intake.isVisible(field, values);
+      });
+    }
+    function showErrors(errors) {
+      Intake.fields.forEach((field) => clearFieldState(field.id));
+      Object.keys(errors).forEach((id) => {
+        if (!wraps[id] || wraps[id].hidden) return;
+        wraps[id].classList.add("is-invalid");
+        msgs[id].textContent = errors[id];
+      });
+    }
+    function applyNeeds(needs) {
+      Object.keys(needs).forEach((id) => {
+        if (!wraps[id] || wraps[id].hidden) return;
+        wraps[id].classList.add("is-needs");
+        msgs[id].textContent = needs[id];
+      });
+    }
+    function syncAll() {
+      Intake.fields.forEach((field) => {
+        if (inputs[field.id]) inputs[field.id].value = values[field.id] || "";
+        syncChips(field);
+        if (hints[field.id]) {
+          hints[field.id].textContent = hintText(field);
+          hints[field.id].hidden = !hints[field.id].textContent;
+        }
+      });
+      refreshConditions();
+    }
+    function showReview(lines) {
+      review.replaceChildren();
+      if (!lines.length) {
+        review.hidden = true;
+        return;
+      }
+      review.hidden = false;
+      const heading = document.createElement("p");
+      heading.className = "intake-review-title";
+      heading.textContent = "Review before you send";
+      review.append(heading);
+      lines.forEach((line) => {
+        const item = document.createElement("p");
+        item.textContent = line;
+        review.append(item);
+      });
+    }
+    function applyAiResult() {
+      const text = pasteBox.value.trim();
+      if (!text) {
+        aiStatus.textContent = "Paste Gemini's answer first.";
+        pasteBox.focus();
+        return;
+      }
+      const result = Intake.parse(pasteBox.value, values, Intake.today());
+      if (!result.ok) {
+        aiStatus.textContent = "That didn't look like the intake answer. Paste the whole reply, including the JSON block.";
+        pasteBox.focus();
+        return;
+      }
+      Intake.fields.forEach((field) => {
+        values[field.id] = result.values[field.id];
+      });
+      Intake.fields.forEach((field) => clearFieldState(field.id));
+      syncAll();
+      applyNeeds(result.needs);
+      showReview(result.review);
+      scheduleSave();
+      aiStatus.textContent = "Filled in what Gemini returned. Check anything highlighted, then send it to Miranda.";
+      const first = scroller.querySelector(".is-needs") || review;
+      if (first && !review.hidden) review.scrollIntoView({ block: "nearest" });
+      else if (first) first.scrollIntoView({ block: "center" });
+    }
+    function showPreview(mail, truncated) {
+      preview.hidden = false;
+      previewTo.textContent = "To: " + Intake.EMAIL;
+      previewSubject.textContent = "Subject: " + mail.subject;
+      previewBody.value = mail.body;
+      previewBody.rows = Math.min(48, Math.max(14, mail.body.split("\n").length + 1));
+      sendStatus.textContent = truncated
+        ? "This intake is too long for an email link, so the full summary was copied. Paste it into the email to Miranda, then hit Send. After you send it, you can clear this draft."
+        : "Your email app should be open, addressed to Miranda. Hit Send there. If the body is missing, tap Copy. After you send it, you can clear this draft.";
+      preview.scrollIntoView({ block: "start" });
+    }
+    function openMailto(href) {
+      const link = document.createElement("a");
+      link.href = href;
+      document.body.append(link);
+      link.click();
+      link.remove();
+    }
+    async function copySummary(mail) {
+      const text = "To: " + Intake.EMAIL + "\nSubject: " + mail.subject + "\n\n" + mail.body;
+      previewBody.value = mail.body;
+      const copied = await finishClipboardWrite(startClipboardWrite(text), previewBody);
+      showToast(copied ? "Intake copied" : "Select the email and copy it");
+      return copied;
+    }
+    async function sendIntake() {
+      const errors = Intake.validate(values);
+      showErrors(errors);
+      const ids = Object.keys(errors);
+      if (ids.length) {
+        sendStatus.textContent = "A few answers are still needed before this can go to Miranda.";
+        const wrap = wraps[ids[0]];
+        if (wrap) wrap.scrollIntoView({ block: "center" });
+        return;
+      }
+      const mail = Intake.summary(values);
+      const packed = Intake.fitMailto(mail.subject, mail.body);
+      showPreview(mail, packed.truncated);
+      if (packed.truncated) {
+        const copied = await copySummary(mail);
+        if (!copied) {
+          sendStatus.textContent = "This intake is too long for an email link, and the clipboard was blocked. The email below is selected. Copy it, paste it into the email to Miranda, then send.";
+        }
+      }
+      openMailto(packed.href);
+    }
+    async function shareSummary() {
+      const errors = Intake.validate(values);
+      showErrors(errors);
+      if (Object.keys(errors).length) {
+        sendStatus.textContent = "A few answers are still needed before this can go to Miranda.";
+        const wrap = wraps[Object.keys(errors)[0]];
+        if (wrap) wrap.scrollIntoView({ block: "center" });
+        return;
+      }
+      const mail = Intake.summary(values);
+      const text = "To: " + Intake.EMAIL + "\nSubject: " + mail.subject + "\n\n" + mail.body;
+      if (!navigator.share) {
+        showPreview(mail, false);
+        const copied = await copySummary(mail);
+        sendStatus.textContent = copied
+          ? "Sharing isn't available here. The intake was copied instead."
+          : "Sharing isn't available here. The email below is selected. Copy it.";
+        return;
+      }
+      try {
+        await navigator.share({ title: mail.subject, text: text });
+      } catch (error) {
+        if (error && error.name === "AbortError") return;
+        showPreview(mail, false);
+        const copied = await copySummary(mail);
+        sendStatus.textContent = copied
+          ? "Share didn't open. The intake was copied instead."
+          : "Share didn't open. The email below is selected. Copy it.";
+      }
+    }
+
+    notesBox.addEventListener("input", () => {
+      promptBox.value = MODEL_LINE + "\n\n" + Intake.promptBody(notesBox.value);
+      scheduleSave();
+    });
+    pasteBox.addEventListener("input", scheduleSave);
+    pasteBox.addEventListener("paste", (event) => {
+      const clip = event.clipboardData && event.clipboardData.getData("text");
+      if (!clip) return;
+      window.setTimeout(() => {
+        if (Intake.parse(pasteBox.value, values, Intake.today()).ok) applyAiResult();
+      }, 0);
+    });
+    if (dictate) {
+      dictate.addEventListener("click", () => {
+        if (intakeRecognizer) {
+          stopIntakeSpeech();
+          dictate.textContent = "Dictate";
+          return;
+        }
+        intakeRecognizer = new Speech();
+        intakeRecognizer.lang = "en-US";
+        intakeRecognizer.continuous = true;
+        intakeRecognizer.interimResults = false;
+        intakeRecognizer.onresult = (event) => {
+          let said = "";
+          for (let i = event.resultIndex; i < event.results.length; i += 1) {
+            if (event.results[i].isFinal) said += event.results[i][0].transcript;
+          }
+          said = said.trim();
+          if (!said) return;
+          notesBox.value = notesBox.value.trim() ? notesBox.value.replace(/\s*$/, " ") + said : said;
+          notesBox.dispatchEvent(new Event("input"));
+        };
+        intakeRecognizer.onerror = () => {
+          aiStatus.textContent = "The microphone was blocked. Use the keyboard microphone, or paste the notes.";
+        };
+        intakeRecognizer.onend = () => {
+          intakeRecognizer = null;
+          dictate.textContent = "Dictate";
+        };
+        dictate.textContent = "Stop dictation";
+        try {
+          intakeRecognizer.start();
+        } catch (error) {
+          stopIntakeSpeech();
+          dictate.textContent = "Dictate";
+          aiStatus.textContent = "Dictation didn't start. Use the keyboard microphone, or paste the notes.";
+        }
+      });
+    }
+    function prepareIntakePrompt() {
+      if (!notesBox.value.trim()) {
+        aiStatus.textContent = "Paste or dictate the listing notes first. A sentence or two is enough.";
+        notesBox.focus();
+        return false;
+      }
+      promptDetails.open = true;
+      promptBox.value = MODEL_LINE + "\n\n" + Intake.promptBody(notesBox.value);
+      return true;
+    }
+    geminiButton.addEventListener("click", () => {
+      if (!prepareIntakePrompt()) return;
+      copyPrompt(promptBox, aiStatus, true, Intake.GEMINI_URL);
+    });
+    copyOnly.addEventListener("click", () => {
+      if (!prepareIntakePrompt()) return;
+      copyPrompt(promptBox, aiStatus, false, Intake.GEMINI_URL);
+    });
+    fillButton.addEventListener("click", applyAiResult);
+    sendButton.addEventListener("click", () => {
+      sendIntake();
+    });
+    shareIntake.addEventListener("click", () => {
+      shareSummary();
+    });
+    copyIntake.addEventListener("click", async () => {
+      const mail = Intake.summary(values);
+      showPreview(mail, false);
+      const copied = await copySummary(mail);
+      const errors = Intake.validate(values);
+      showErrors(errors);
+      if (Object.keys(errors).length) {
+        sendStatus.textContent = copied
+          ? "Copied. A few answers are still needed before you send it to Miranda."
+          : "The email text is selected. A few answers are still needed before you send it.";
+        return;
+      }
+      sendStatus.textContent = copied
+        ? "Copied. Paste it into an email to " + Intake.EMAIL + "."
+        : "The email text is selected. Copy it, then paste it into an email to Miranda.";
+    });
+    clearButton.addEventListener("click", () => {
+      try {
+        localStorage.removeItem(Intake.DRAFT_KEY);
+      } catch (error) {
+        /* private mode */
+      }
+      closeSheet();
+      openIntakeSheet(options);
+    });
+    keepButton.addEventListener("click", () => {
+      preview.hidden = true;
+      sendStatus.textContent = "";
+    });
+    close.addEventListener("click", closeSheet);
+    sheet.addEventListener("click", (event) => {
+      if (event.target === sheet) closeSheet();
+    });
+    sheet.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") closeSheet();
+    });
+
+    if (options && options.focusNotes) notesBox.focus({ preventScroll: true });
+    else if (inputs.address && !values.address) inputs.address.focus({ preventScroll: true });
+    else close.focus({ preventScroll: true });
   }
 
   function storageGet(key) {

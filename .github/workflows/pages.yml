@@ -40,6 +40,7 @@ jobs:
           required = [
               "index.html",
               "styles.css",
+              "listing-intake.js",
               "app.js",
               "sw.js",
               "manifest.json",
@@ -79,7 +80,7 @@ jobs:
       - name: Assemble site
         run: |
           mkdir -p _site
-          cp -a index.html styles.css app.js sw.js manifest.json .nojekyll data icons assets _site/
+          cp -a index.html styles.css listing-intake.js app.js sw.js manifest.json .nojekyll data icons assets _site/
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

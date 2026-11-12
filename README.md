@@ -25,14 +25,14 @@ iPhone only installs this app from Safari. Chrome on iPhone cannot add it to the
 
 ## Use the portal
 
-- **Home** opens with a greeting and the Bold Truth of the day. The Stoic quote of the day sits at the bottom of the page. Both rotate by the day of the year in America/New_York, so every agent sees the same pair. Search, pins, recent forms, and quick actions follow. Quick actions stay a two-column grid, split into Forms and AI Prompts. AI Prompts holds Home Eval, Quick Comps, Local Market, and Appt Prep. Appt Prep opens the prompt from AI Prompt Listing Appt Prep so you can copy it and paste it into Gemini, and Home Eval opens the prompt from AI Prompt Home Price Eval the same way. Both sheets tell you to use the newest, most capable model with thinking or extended reasoning turned on, and that line is the first line of the copied prompt. The original doc links stay in Resources. Dashboards (Team Pipeline and Local Market) sit under the Buyers and Listings groups.
-- **Resources** groups the library into Start Here, Playbooks, Listing Tools, and Market & Pricing.
+- **Home** opens with a greeting and the Bold Truth of the day. The Stoic quote of the day sits at the bottom of the page. Both rotate by the day of the year in America/New_York, so every agent sees the same pair. Search, pins, recent forms, and quick actions follow. Quick actions stay a two-column grid, split into Forms and AI Prompts. Forms starts with Listing Intake, which opens in the app: fill out the V2 form and send it to Miranda at operations@thesoldcollective.com. A draft stays on the phone. AI Prompts holds Home Eval, Quick Comps, Local Market, Appt Prep, and Listing Intake (AI). Listing Intake (AI) opens the same form at the notes box so you can paste listing notes, copy Tony's prompt into Gemini, then paste the answer back to fill the fields. Appt Prep opens the prompt from AI Prompt Listing Appt Prep so you can copy it and paste it into Gemini, and Home Eval opens the prompt from AI Prompt Home Price Eval the same way. Those sheets, and the listing-notes prompt, tell you to use the newest, most capable model with thinking or extended reasoning turned on, and that line is the first line of the copied prompt. The original doc links stay in Resources. Dashboards (Team Pipeline and Local Market) sit under the Buyers and Listings groups.
+- **Resources** groups the library into Start Here, Playbooks, Listing Tools, and Market & Pricing. In Listing Tools, Listing Intake Form opens the in-app form. The fill-in PDF stays on that same row.
 - **Team** lists Miranda Moore and Keisha Dickerson, with call, text, and email. Need help? emails team@thesoldcollective.com.
 - **Search** in the bottom bar looks across forms, resources, and BOLD Truths. The full list is no longer on Home; search still finds every truth.
 - The first visit can save a first name on this phone. It is not sent anywhere.
 - Pin a form with the star. Pins and the last few forms you opened stay on this phone.
 - The sun and moon button switches light and dark. Share sends the portal link.
-- Form and resource buttons open the original link in a new tab (Safari on iPhone, Chrome on Android).
+- Most form and resource buttons open the original link in a new tab (Safari on iPhone, Chrome on Android). Listing Intake opens in the app.
 - BOLD Truths stay in the app. They are statements, not links.
 - After one online visit, the app shell opens with no connection. Pull to refresh when you are back online. Opening a form or file still needs the network.
 
