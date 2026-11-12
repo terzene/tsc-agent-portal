@@ -266,8 +266,14 @@
     return subject.length > 90 ? subject.slice(0, 87) + "..." : subject;
   }
 
-  function promptBody(notes) {
-    return INSTRUCTIONS + "\n" + catalog() + "\n\nAGENT NOTES\nThe paste may include messy voice-to-text notes and a structured data sheet. The structured sheet wins on any conflict.\n---\n" + String(notes || "").replace(/^\s+|\s+$/g, "");
+  function promptBody(notes, fileNames) {
+    const names = Array.isArray(fileNames) ? fileNames.map(function (name) { return String(name || "").trim(); }).filter(Boolean) : [];
+    const typed = String(notes || "").replace(/^\s+|\s+$/g, "");
+    const noteBlock = typed || (names.length ? "(No typed notes. Read the attached files.)" : "");
+    const files = names.length
+      ? "\n\nATTACHED FILES\nThe agent is attaching these files with this prompt. Read every photo, PDF, and document, including handwriting and screenshots.\n- " + names.join("\n- ")
+      : "";
+    return INSTRUCTIONS + "\n" + catalog() + "\n\nAGENT NOTES\nThe paste may include messy voice-to-text notes and a structured data sheet. The structured sheet wins on any conflict. Also read any photos, PDFs, or documents attached with this prompt (handwritten intake, tax record, data sheet). If there are no typed notes, use the files alone.\n---\n" + noteBlock + files;
   }
 
   function parse(text, current, day) {
@@ -574,7 +580,8 @@
     "STEP 1 - READ THE NOTES",
     "- Decode obvious voice-to-text errors (e.g. \"Faced fat air\" = forced hot air, \"never W/D\" = newer washer and dryer, \"septic getting pumped\" = septic).",
     "- If a fragment can't be decoded confidently, leave it out and list it in flags.",
-    "- If I provide BOTH messy notes and a structured data sheet, the structured sheet wins on any conflict but put the messy notes info in notes. Call out every conflict explicitly in flags (old value vs new value).",
+    "- I may attach photos, PDFs, or documents (a handwritten intake, a reMarkable page, a tax record, or a data sheet). Read them. They count as notes.",
+    "- If I provide BOTH messy notes and a structured data sheet or file, the structured sheet or file wins on any conflict but put the messy notes info in notes. Call out every conflict explicitly in flags (old value vs new value).",
     "",
     "STEP 2 - FILL THE FORM",
     "Fill only what the notes or data support. For these fields, NEVER invent a value. If it isn't explicitly given, mark NEEDS INPUT:",
