@@ -62,7 +62,6 @@
         { label: "Quick Comps", title: "Quick Comps", tone: "playbooks" },
         { label: "Local Market", title: "Local Market", tone: "market" },
         { label: "Appt Prep", promptId: "appt-prep", tone: "tools" },
-        { label: "Listing Intake (AI)", intake: "notes", tone: "ideas" },
       ],
     },
   ];
@@ -1779,10 +1778,18 @@
     myself.type = "button";
     myself.className = "intake-text-btn";
     myself.textContent = "Fill it in myself";
+    const blankPdf = document.createElement("a");
+    blankPdf.className = "intake-text-btn";
+    blankPdf.href = "forms/listing-intake-v2.pdf";
+    blankPdf.setAttribute("download", "TSC Listing Intake Form V2.pdf");
+    blankPdf.textContent = "Download blank PDF form";
+    const altRow = document.createElement("p");
+    altRow.className = "intake-mini";
+    altRow.append(myself, blankPdf);
     const formWrap = document.createElement("div");
     formWrap.id = "intake-form";
     formWrap.hidden = true;
-    scroller.append(notesLabel, notesBox, stepLinks, fileLabel, fileList, fillButton, orDivider, diyLabel, geminiButton, geminiHint, promptBox, spinner, aiStatus, review, myself, formWrap);
+    scroller.append(notesLabel, notesBox, stepLinks, fileLabel, fileList, fillButton, orDivider, diyLabel, geminiButton, geminiHint, promptBox, spinner, aiStatus, review, altRow, formWrap);
 
     Intake.sections.forEach((section) => {
       const block = document.createElement("section");
