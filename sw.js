@@ -2,7 +2,7 @@
    Relative URLs stay inside the GitHub Pages project path.
    Bump CACHE when the precache list changes. */
 
-const CACHE = "tsc-portal-shell-v13";
+const CACHE = "tsc-portal-shell-v14";
 
 const SHELL = [
   "./index.html",
@@ -12,6 +12,7 @@ const SHELL = [
   "./data/portal.json",
   "./data/stoic-quotes.json",
   "./data/home-eval.json",
+  "./data/appt-prep.json",
   "./assets/wordmark.png",
   "./assets/fonts/inter-400.woff2",
   "./assets/fonts/inter-700.woff2",

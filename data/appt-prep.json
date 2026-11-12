@@ -1,0 +1,15 @@
+{
+  "sourceUrl": "https://docs.google.com/document/d/1LTGRYpCvHHpMZA_By3fG99rja-EbLuxwl-hGJLg0c1g/edit?usp=drivesdk",
+  "sourceTitle": "AI Prompt Listing Appt Prep",
+  "docName": "Listing Appointment Prep",
+  "geminiUrl": "https://gemini.google.com/app",
+  "intro": "Enter Prompt in Gemini For 1st Listing Appointment Prep:",
+  "prompt": "[INSERT ADDRESS] - Do deep research and be highly accurate and exact with ALL information. Give me a short, highly scannable cheat sheet for a listing appointment. The seller might see my screen, so DO NOT include any advice to me, tables, conversational filler, or labels like \"Talking Point\". I only want raw data and professional market impact. First thing is to put the address & municipality. Make all the info bullet pointed separately so it’s all easy to read.\n\n• Property Specs: Year built, acreage (omit if townhouse/condo), sq ft, beds/baths, any utility info, and a quick note on how the size/lot compares to neighbors.\n\n• Carrying Costs: Latest annual taxes, estimated HOA (if applicable), and 1 sentence on how this impacts buyer affordability.\n\n• Ownership History: Last purchase date and price, plus 1 sentence on their equity position and how the home's condition (updated vs. original) dictates the price.\n\n• Comps: Include all actively listed, currently under contract, and recently sold on the same street or within the same neighborhood within the past 2 years (be very accurate) & 1 highly relevant recent comp, the top market value ceiling, and the as-is price floor. Make sure to put how many days on market each comp was on for before going under contract/pending.\n\nAlso give the zestimate and any other home evaluation from major websites.\n\nMake it extremely quick to read at a glance.",
+  "fields": [
+    {
+      "id": "address",
+      "label": "Property address",
+      "token": "[INSERT ADDRESS]"
+    }
+  ]
+}
