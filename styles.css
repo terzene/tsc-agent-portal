@@ -131,6 +131,68 @@ h2 {
   transform: none;
 }
 
+.sign-in {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding: calc(24px + env(safe-area-inset-top)) 24px calc(24px + env(safe-area-inset-bottom));
+  background: var(--bg);
+  color: var(--text);
+  text-align: center;
+}
+
+.sign-in h1 {
+  max-width: 16em;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+}
+
+.sign-in .wordmark {
+  width: min(68%, 220px);
+  padding-bottom: 12px;
+  border-bottom: 2px solid var(--red);
+}
+
+.sign-in-status {
+  max-width: 22em;
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.sign-in-status:empty {
+  display: none;
+}
+
+.sign-in-status.is-error {
+  color: var(--text);
+}
+
+#google-button {
+  min-height: 44px;
+}
+
+html.auth-required:not(.auth-ready) .sign-in {
+  display: flex;
+}
+
+html.auth-required:not(.auth-ready) .app,
+html.auth-required:not(.auth-ready) .skip {
+  display: none !important;
+}
+
+.dock-signout[hidden] {
+  display: none !important;
+}
+
 .brand {
   padding: calc(12px + env(safe-area-inset-top)) var(--pad) 14px;
   border-bottom: 2px solid var(--red);
@@ -2041,6 +2103,10 @@ html.desktop .dock button {
 html.desktop .dock button[aria-current="page"] {
   background: var(--icon-bg);
   color: var(--red);
+}
+
+html.desktop .dock-signout {
+  margin-top: auto;
 }
 
 html.desktop .action-grid {

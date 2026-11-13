@@ -1,6 +1,6 @@
 # TSC Agent Portal
 
-Installable portal for The Sold Collective agents. It is a static site with no backend: forms, resources, and the BOLD Truths in one place, saved on the phone so the list still opens offline.
+Installable portal for The Sold Collective agents. It is a static site: forms, resources, and the BOLD Truths in one place, saved on the phone so the list still opens offline. Google sign-in and Listing Intake AI fill use an Apps Script when they are configured. The sign-in gate stays off until a Google client ID and auth URL are both set, so the portal does not lock anyone out before that setup.
 
 After GitHub Pages is enabled, the site is [https://terzene.github.io/tsc-agent-portal/](https://terzene.github.io/tsc-agent-portal/).
 
@@ -65,3 +65,41 @@ A repo admin does this once. The workflow cannot publish until it is set.
 Pushing to `main` (or re-running **Deploy to GitHub Pages** from the Actions tab) then publishes [https://terzene.github.io/tsc-agent-portal/](https://terzene.github.io/tsc-agent-portal/).
 
 The live URL needs the trailing slash.
+
+## Set up Google sign-in
+
+Sign-in locks the portal to the team list in the Apps Script property `ALLOWED_EMAILS`. Until you finish the steps below, leave `authConfig.clientId` empty in `index.html`. An empty client ID keeps the gate off.
+
+### Create the OAuth client ID
+
+1. Open [Google Cloud Console](https://console.cloud.google.com/).
+2. Create a project, or pick the project you want to use. Name it **TSC Agent Portal**.
+3. Open **APIs & Services** → **OAuth consent screen**.
+4. Choose **External**, then create the app. App name: **TSC Portal**. Use your own Google account as the user support email. The scopes Google Sign-In requests are openid, email, and profile.
+5. If the consent screen stays in **Testing**, only listed test users can sign in, and Google expires those grants after 7 days. Choose **Publish app** so the whole team can sign in. These basic scopes do not need a Google verification review.
+6. Open **APIs & Services** → **Credentials** → **Create credentials** → **OAuth client ID**.
+7. Application type: **Web application**.
+8. Name: **TSC Agent Portal**.
+9. Under **Authorized JavaScript origins**, add `https://terzene.github.io`. Do not add a path. Leave **Authorized redirect URIs** empty. The Sign in with Google button does not use a redirect.
+10. Click **Create** and copy the client ID. It ends in `.apps.googleusercontent.com`.
+
+### Script properties and deploy
+
+The auth endpoint lives in [`apps-script/intake-ai/Code.gs`](apps-script/intake-ai/Code.gs), the same web app as Listing Intake AI fill.
+
+1. Paste the updated `Code.gs` into the Apps Script project. **Deploy** → **Manage deployments** → pencil → **New version** → **Deploy**. The `/exec` URL stays the same.
+2. In **Project Settings** → **Script properties**, set:
+   - `GOOGLE_CLIENT_ID` — the same client ID from the step above. The script checks the Google ID token's audience against this value.
+   - `ALLOWED_EMAILS` — comma-separated team emails. Matching is case-insensitive. Example shape: `one@example.com, two@example.com`. An empty list lets nobody in.
+   - `ADMIN_EMAILS` — optional. Same comma-separated shape. Those accounts get `"role": "admin"` on the session. Everyone else on the list gets `"role": "agent"`.
+   - `SESSION_SECRET` — a long random string. Create it locally with `openssl rand -hex 32` and paste it only into Script properties. Do not commit it. Once this is set, AI fill requires a signed-in session and no longer accepts `INTAKE_SECRET` alone. Until it is set, AI fill keeps using `INTAKE_SECRET`.
+3. In `index.html`, set both fields in the head script:
+
+```js
+var authConfig = { clientId: "YOUR_CLIENT_ID.apps.googleusercontent.com", url: "https://script.google.com/macros/s/YOUR_DEPLOYMENT/exec" };
+```
+
+`url` is the web app `/exec` URL. The gate turns on only when `clientId` and `url` are both non-empty.
+4. Bump the `CACHE` string in `sw.js` by one so installed copies pick up the sign-in page, then commit and push.
+
+A signed-in agent gets a session token that lasts 30 days. Opening the portal online renews it. If they were already signed in and the phone is offline, the saved session still lets them in until it expires. Sign out is in the bottom menu on a phone and at the bottom of the sidebar on a desktop. An account that is not on `ALLOWED_EMAILS` sees: "This account isn't on the TSC team list. Ask Miranda for access."

@@ -137,6 +137,7 @@
   const status = document.getElementById("status");
   const shareButton = document.getElementById("share");
   const themeButton = document.getElementById("theme");
+  const signOutButton = document.getElementById("sign-out");
   const toast = document.getElementById("toast");
   const welcome = document.getElementById("welcome");
 
@@ -157,12 +158,31 @@
 
   state.view = viewFromHash();
   applyTheme(resolveTheme());
+  wireAuth();
   registerServiceWorker();
   bind();
   syncOnline();
   syncNav();
   setupInstall();
   loadData();
+
+  function wireAuth() {
+    if (signOutButton) {
+      signOutButton.addEventListener("click", () => {
+        document.querySelectorAll(".eval-sheet").forEach((node) => node.remove());
+        if (window.TSCAuth) window.TSCAuth.signOut();
+      });
+    }
+    if (!window.TSCAuth) return;
+    window.TSCAuth.onChange(syncAuthChrome);
+    window.TSCAuth.start();
+    syncAuthChrome(window.TSCAuth.getSession());
+  }
+
+  function syncAuthChrome(session) {
+    if (!signOutButton) return;
+    signOutButton.hidden = !(session && session.token);
+  }
 
   function registerServiceWorker() {
     if (!("serviceWorker" in navigator)) return;
@@ -2425,11 +2445,14 @@
       aiStatus.textContent = "";
       try {
         const files = await filesForUpload();
+        const session = window.TSCAuth && typeof window.TSCAuth.getSession === "function" ? window.TSCAuth.getSession() : null;
         const fetchOptions = {
           method: "POST",
           headers: { "Content-Type": "text/plain;charset=utf-8" },
           body: JSON.stringify({
+            action: "fill",
             secret: String(config.secret || ""),
+            token: session && session.token ? session.token : "",
             origin: location.origin,
             notes: notesBox.value,
             files: files,
@@ -2441,6 +2464,15 @@
         const response = await fetch(url, fetchOptions);
         const raw = await response.text();
         const payload = readServerPayload(raw);
+        if (payload && (payload.code === "unauthorized" || payload.code === "not_allowed")) {
+          document.querySelectorAll(".eval-sheet").forEach((node) => node.remove());
+          if (window.TSCAuth) {
+            window.TSCAuth.signOut(payload.code === "not_allowed"
+              ? "This account isn't on the TSC team list. Ask Miranda for access."
+              : "Sign in again.");
+          }
+          return;
+        }
         if (!payload || payload.ok === false || !payload.intake) {
           aiStatus.textContent = friendlyError(payload);
           return;
