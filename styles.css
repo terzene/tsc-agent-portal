@@ -2262,3 +2262,123 @@ html.desktop .status {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
+
+.call5 {
+  margin: 8px var(--pad) 4px;
+  padding: 16px 16px 8px;
+  border: 1px solid var(--card-border);
+  border-left: 3px solid var(--red);
+  border-radius: 22px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.call5-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.call5-title {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.call5-count {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+  text-align: right;
+}
+
+.call5-empty {
+  margin: 12px 0 8px;
+  color: var(--muted);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.call5-row {
+  display: grid;
+  gap: 8px;
+  padding: 12px 0;
+  border-top: 1px solid var(--line);
+}
+
+.call5-row.is-leaving {
+  transform: translateX(24px);
+  opacity: 0;
+}
+
+.call5-name {
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.call5-context,
+.call5-missing {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.call5-actions,
+.call5-log {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.call5-reach,
+.call5-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.call5-mark {
+  background: var(--red);
+  border-color: var(--red);
+  color: var(--white);
+}
+
+.call5-mark.is-skip {
+  background: transparent;
+  color: var(--text);
+}
+
+.call5-reach:disabled {
+  opacity: 0.45;
+}
+
+html.desktop .call5-row {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  column-gap: 16px;
+}
+
+html.desktop .call5-actions,
+html.desktop .call5-log {
+  justify-content: flex-end;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .call5-row {
+    transition: transform 220ms ease, opacity 220ms ease;
+  }
+}

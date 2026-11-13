@@ -175,7 +175,10 @@
       });
     }
     if (!window.TSCAuth) return;
-    window.TSCAuth.onChange(syncAuthChrome);
+    window.TSCAuth.onChange((session) => {
+      syncAuthChrome(session);
+      if (state.data && state.view === "home" && !state.query.trim()) render();
+    });
     window.TSCAuth.start();
     syncAuthChrome(window.TSCAuth.getSession());
   }
@@ -249,6 +252,7 @@
     window.addEventListener("online", () => {
       syncOnline();
       loadData({ silent: true });
+      if (window.TSCCall5) window.TSCCall5.sync();
     });
     window.addEventListener("offline", syncOnline);
     window.addEventListener("pageshow", (event) => {
@@ -429,6 +433,7 @@
     const pinned = forms.filter((item) => isPinned(item.url));
     const recent = recentForms().filter((item) => !isPinned(item.url));
     meta.textContent = "";
+    if (window.TSCCall5 && window.TSCCall5.available()) panel.append(window.TSCCall5.card());
     panel.append(sectionLabel("Pinned", pinned.length ? String(pinned.length) : ""));
     if (pinned.length) panel.append(stack(pinned.map((item) => formTile(item))));
     else panel.append(emptyShelf("pin", "Pin a form with the star and it stays on this phone."));

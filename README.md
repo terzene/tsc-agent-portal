@@ -112,4 +112,36 @@ Leave `GUEST_CODE` unset and the sign-in page does not offer a guest code. Do no
 2. Deploy a new version of the script.
 3. **Have a guest code?** shows under Sign in with Google only when that property is set. The script compares the code in constant time. Five wrong tries on one device within 15 minutes are refused. A shared ceiling also stops someone from getting unlimited tries by changing the device id. Apps Script does not receive the caller's IP address, so the limit is kept in CacheService this way.
 4. A guest session does not expire. It stays valid until Sign out, or until `GUEST_CODE` changes. Each guest token carries a hash of the current code, so the old token stops working when the code changes.
-5. Guests can use the portal, including forms, resources, Bold Truths, the Stoic quote, and Listing Intake AI fill. They do not get agent-specific data: My Day, My Deals, pace, leads, or a scoreboard. A Guest badge sits in the header next to Sign out.
+5. Guests can use the portal, including forms, resources, Bold Truths, the Stoic quote, and Listing Intake AI fill. They do not get agent-specific data: My Day, My Deals, pace, leads, a scoreboard, or Call 5. A Guest badge sits in the header next to Sign out.
+
+## Call 5
+
+Signed-in agents see a Call 5 card at the top of Home. Guests do not. It shows five people from that agent's own past clients and sphere, least recently contacted first. Call and Text open the phone. Called and Texted record a contact and move that person to the back. Skip moves them three spots back and does not count. The phone keeps the current list and sends any offline taps when the connection returns.
+
+The list lives in a Google Sheet. Put its ID in the Script property `SPHERE_SHEET_ID`. The script runs as the account that deployed it, so that account needs access to the sheet. No real contacts belong in this repo.
+
+### Sheet format
+
+Two tabs.
+
+**Contacts**
+
+| id | agent_email | name | phone | email | type | context | last_contacted | last_action |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| c1 | agent@example.com | Alex Rivera | 555-010-1001 | alex@example.com | past client | Past client, closed 2023, 12 Main St | 2024-06-02T15:00:00Z | called |
+| c2 | agent@example.com | Jordan Lee | 555-010-1002 | jordan@example.com | sphere | Sphere | | |
+| c3 | agent@example.com | Sam Patel | | sam@example.com | past client | Past client, closed 2021, 4 Oak Ave | | |
+
+`type` is `past client` or `sphere`. `context` is the short line on the card. Leave `phone` blank when there is no number; the card still shows the person, with Call and Text disabled. `last_contacted` is an ISO time or blank. Each agent only sees rows whose `agent_email` matches the signed-in session. An admin in `ADMIN_EMAILS` may pass another agent's email as `agent` on the `call-list` and `call-log` requests.
+
+You can instead give an agent their own tab named exactly with their email, such as `agent@example.com`. That tab uses the same columns. A shared **Contacts** tab is the usual setup.
+
+**Log**
+
+The script creates this tab if it is missing.
+
+| timestamp | agent_email | contact_id | action | name |
+| --- | --- | --- | --- | --- |
+| 2026-11-10T15:04:00Z | agent@example.com | c1 | called | Alex Rivera |
+
+`action` is `called`, `texted`, or `skip`. Only called and texted count toward the weekly number. The week starts Monday in America/New_York.
