@@ -41,6 +41,7 @@ jobs:
               "index.html",
               "styles.css",
               "listing-intake.js",
+              "auth.js",
               "app.js",
               "sw.js",
               "manifest.json",
@@ -81,7 +82,7 @@ jobs:
       - name: Assemble site
         run: |
           mkdir -p _site
-          cp -a index.html styles.css listing-intake.js app.js sw.js manifest.json .nojekyll data icons assets forms _site/
+          cp -a index.html styles.css listing-intake.js auth.js app.js sw.js manifest.json .nojekyll data icons assets forms _site/
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

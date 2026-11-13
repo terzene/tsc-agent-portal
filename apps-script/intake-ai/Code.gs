@@ -1,7 +1,7 @@
 var PROMPT_PREFIX_ = "Turn my raw listing notes into field values for the TSC Listing Intake form. My notes are often voice-to-text and come in garbled. I may also paste a clean structured data sheet (specs, taxes, comps).\n\nSTEP 1 - READ THE NOTES\n- Decode obvious voice-to-text errors (e.g. \"Faced fat air\" = forced hot air, \"never W/D\" = newer washer and dryer, \"septic getting pumped\" = septic).\n- If a fragment can't be decoded confidently, leave it out and list it in flags.\n- I may attach photos, PDFs, or documents (a handwritten intake, a reMarkable page, a tax record, or a data sheet). Read them. They count as notes.\n- If I provide BOTH messy notes and a structured data sheet or file, the structured sheet or file wins on any conflict but put the messy notes info in notes. Call out every conflict explicitly in flags (old value vs new value).\n\nSTEP 2 - FILL THE FORM\nFill only what the notes or data support. For these fields, NEVER invent a value. If it isn't explicitly given, mark NEEDS INPUT:\n- Style of Dwelling (style) and Primary Style (primaryStyle)\n- Exterior / siding material (exterior)\n- Kitchen area type (kitchen)\n- Garage space count (garageSpaces)\n- Propane or solar leased vs owned (do not pick Gas-Propane Leased, Gas-Propane Owned, Solar-Leased, or Solar-Owned unless the notes say which)\nTwo allowed judgment calls, but you MUST list them in flags:\n- Roof: if only age is given, default to Asphalt Shingle (regional norm).\n- \"Leased\" in notes maps to propane, since that's the only fuel with a leased/owned split. Use Gas-Propane Leased and say so in flags.\nApply Fair Housing to the notes text: describe the property and its features only. No references to people, family status, demographics, religion, \"safe,\" schools or \"walking distance to [place of worship]\" as selling points.\n\nSTEP 3 - RETURN JSON ONLY\nDo not create a Google Doc. Do not write a legend, commentary, or summary outside the JSON.\nReply with a single json code block and nothing else. Use the field ids and the exact option labels listed below.\nText and number fields are strings. Checkbox fields are arrays of option labels. basement is \"Yes\", \"No\", or \"\".\ndate is YYYY-MM-DD when the notes give one, otherwise \"\". mls is the number, \"TBD\", or \"\".\nWhen a never-invent text or number field is unknown, use the exact text NEEDS INPUT. For every other unknown text or number, use \"\".\nWhen a checkbox field has no supported pick, use [] and add that field name to flags.\nnotes is one comprehensive paragraph of property features only (Notable Items / Features).\nflags is a short list of: assumptions you made (roof, propane leased, any other default), conflicts between notes and structured data (old vs new), every NEEDS INPUT I still owe, and any note fragments you could not read.\nKeep flags casual and tight. No em dashes. Lead with what matters.\n\nFIELD IDS AND EXACT OPTIONS\naddress (text) Property Address\nmls (text) MLS #\ndate (text) Date\nrooms (text) 28) # Rooms\nbedrooms (text) 29) # Bedrooms\nfullBaths (text) 30) # Full Baths\nhalfBaths (text) 31) # Half Baths\nlotSize (text) 32) Approx Lot Size\nyearBuilt (text) 35) Year Built\nconstruction (array, up to 2, only when yearBuilt gt 0) 36) Construction / Year Built Desc\noptions: Approximate, Historical, Renovated (When), Standing, To Be Built, Under Construction, Unknown\nstyle (array, up to 3) 38) Style of Dwelling\noptions: 1/2 Duplex, A-Frame, Bi-Level, Bungalow, Cape Cod, Carriage House, Chalet, Colonial, Contemporary, Converted Structure, Cottage, Custom Home, Detached, Development Home, Duplex, Expanded Ranch, Extra House on Lot, First Floor Unit, Fixer Upper, Hi-Rise, Lakestyle, Log Cabin, Log Home, Mediterranean, Multi-Floor Unit, One Floor Unit, Raised Ranch, Ranch, See Remarks, Split-Level, Townhouse-End Unit, Townhouse-Interior Unit, Trailer, Tudor, Victorian\nprimaryStyle (text) 39) Primary Style\nbasement (one of) 40) Basement\noptions: Yes, No\nbasementDesc (array, up to 4, only when basement eq Yes) 41) Basement Description\noptions: Bilco-Style Door, Crawl Space, Finished, Finished-Partially, French Drain, Full, Partial, Slab, Unfinished, Walkout\nroof (array, up to 2) 43) Roof Description\noptions: Asphalt Shingle, Built-Up, Composition Shingle, Fiberglass, Flat, Imitation Slate, Metal, Rubberized, See Remarks, Slate, Tile, Wood Shingle\nexterior (array, up to 4) 49) Exterior Description\noptions: Aluminum Siding, Brick, Cedar Siding, Cinder Block, Clapboard, Composition Shingle, Composition Siding, Concrete Board, Log, Metal Siding, See Remarks, Steel, Stone, Stucco - Fabricated/Masonry, Vertical Siding, Vinyl Siding, Wood, Wood Shingle\ngarageSpaces (text) 44) # Garage Spaces\ngarageDesc (array, up to 6, only when garageSpaces gt 0) 45) Garage Description\noptions: Additional 1/2 Car Garage, Assigned, Attached Garage, Built-In Garage, Carport-Attached, Carport-Detached, Detached Garage, Finished Garage, Garage Door Opener, Garage Parking, Garage Under, Inside Entrance, Loft Storage, None, On Site, On-Street Parking, Oversize Garage, Pull Down Stairs, See Remarks, Separate Location, Tandem\nparking (array, up to 6) 47) Parking / Driveway Description\noptions: 1 Car Width, 2 Car Width, Additional Parking, Assigned, Blacktop, Circular, Common, Concrete, Concrete Strip, Crushed Stone, Dirt, Driveway-Exclusive, Driveway-Shared, Fencing, Gravel, Hard Surface, Lighting, None, Non-Surfaced, Off-Street Parking, On-Street Parking, Parking Lot-Exclusive, Parking Lot-Shared, Paver Block, See Remarks\nkitchen (array, up to 5) 94) Kitchen Area\noptions: Breakfast Bar, Center Island, Country Kitchen, Eat-In Kitchen, Galley Type, Not Eat-In Kitchen, Pantry, Second Kitchen, See Remarks, Separate Dining Area\nfireplaces (text) 102) # Fireplaces\nfireplaceDesc (array, up to 6, only when fireplaces gt 0) 103) Fireplace Desc\noptions: Bathroom, Bedroom 1, Bedroom 2, Bedroom 3, Bedroom 4, Bedroom 5+, Coal, Dining Room, Family Room, Fireplace Equipment, Foyer/Hall, Gas Fireplace, Gas Ventless, Great Room, Heatolator, Imitation, Insert, Kitchen, Library, Living Room, Non-Functional, Pellet Stove, Rec Room, See Remarks, Wood Burning, Wood Stove-Freestanding\nheating (array, up to 4) 107) Heating\noptions: 1 Unit, 2 Units, 3 Units, 4+ Units, Auxiliary Electric Heat, Baseboard - Cast Iron, Baseboard - Electric, Baseboard - Hotwater, Cent Register Heat, Electric Filter, Floor/Wall Heater, Forced Hot Air, Geothermal, Heat Pump, Humidifier on Furnace, Multi-Zone, No Heat, Radiant - Electric, Radiant - Hot Water, Radiators - Hot Water, Radiators - Steam, See Remarks, Space Heater\nfuel (array, up to 3) 108) Fuel Type\noptions: Coal, Electric, Gas-Natural, Gas-Propane Leased, Gas-Propane Owned, Kerosene, None, Oil Tank Above Ground - Inside, Oil Tank Above Ground - Outside, Oil Tank Below Ground, See Remarks, Solar-Leased, Solar-Owned, Wood\ncooling (array, up to 4) 109) Cooling\noptions: 1 Unit, 2 Units, 3 Units, 4+ Units, Attic Fan, Ceiling Fan, Central Air, Ductless Split AC, Elec Air Filter, Geothermal, Heat Pump, House Exhaust Fan, Multi-Zone Cooling, No Cooling, See Remarks, Wall A/C Unit(s), Window A/C(s)\nutilities (array, up to 3) 110) Utilities\noptions: All Underground, Electric, Gas In Street, Gas-Natural, Gas-Propane, See Remarks\nwater (array, up to 3) 111) Water\noptions: Association, Private, Public Water, See Remarks, Shared Well, Water Charge Extra, Well\nsewer (array, up to 3) 113) Sewer\noptions: Association, Cesspool, Dry Well, Private, Public Available, Public Sewer, See Remarks, Septic, Septic 1 Bedroom Town Verified, Septic 2 Bedroom Town Verified, Septic 3 Bedroom Town Verified, Septic 4 Bedroom Town Verified, Septic 5+ Bedroom Town Verified, Sewer Charge Extra, Shared Sewer\nnotes (text) Notable Items / Features\n\nAGENT NOTES\nThe paste may include messy voice-to-text notes and a structured data sheet. The structured sheet wins on any conflict. Also read any photos, PDFs, or documents attached with this prompt (handwritten intake, tax record, data sheet). If there are no typed notes, use the files alone.\n---\n";
 
 function doGet() {
-  return json_({ ok: true, service: "tsc-intake-ai" });
+  return json_({ ok: true, service: "tsc-intake-ai", auth: true, guest: guestEnabled_() });
 }
 
 function doPost(e) {
@@ -28,20 +28,31 @@ function handlePost_(e) {
   }
 
   var props = PropertiesService.getScriptProperties();
-  var expectedSecret = props.getProperty("INTAKE_SECRET") || "";
+  var action = String(body.action || "fill");
+  if (!originOk_(body, props)) {
+    if (action === "session" || action === "refresh" || action === "guest" || action === "config") {
+      return json_({ ok: false, error: "This portal can't sign in from here." });
+    }
+    return json_({ ok: false, error: "AI fill refused this request." });
+  }
+  if (action === "config") return handleConfig_(props);
+  if (action === "guest") return handleGuest_(body, props);
+  if (action === "session") return handleSession_(body, props);
+  if (action === "refresh") return handleRefresh_(body, props);
+  if (isPersonalAction_(action)) {
+    var personal = requirePersonal_(body, props);
+    if (!personal.ok) return json_(personal);
+    return json_({ ok: false, error: "That view is not ready yet." });
+  }
+  if (action !== "fill") {
+    return json_({ ok: false, error: "The app sent something AI fill could not read." });
+  }
   var apiKey = props.getProperty("GEMINI_API_KEY") || "";
-  if (!expectedSecret || !apiKey) {
+  if (!apiKey) {
     return json_({ ok: false, error: "AI fill is not set up yet. Add the script properties, then try again." });
   }
-  if (!sameSecret_(String(body.secret || ""), expectedSecret)) {
-    return json_({ ok: false, error: "AI fill refused this request." });
-  }
-  var allowed = props.getProperty("ALLOWED_ORIGINS") || "https://terzene.github.io,http://127.0.0.1:8765,http://localhost:8765";
-  var origin = String(body.origin || "").trim();
-  var originOk = allowed.split(",").some(function (item) { return item.trim() === origin; });
-  if (!originOk) {
-    return json_({ ok: false, error: "AI fill refused this request." });
-  }
+  var auth = authorizeFill_(body, props);
+  if (!auth.ok) return json_(auth);
 
   var notes = String(body.notes || "");
   if (notes.length > 100000) {
@@ -200,6 +211,289 @@ function guessMime_(name) {
   if (/\.doc$/.test(lower)) return "application/msword";
   if (/\.txt$/.test(lower)) return "text/plain";
   return "application/octet-stream";
+}
+
+var SESSION_TTL_SECONDS_ = 30 * 24 * 60 * 60;
+
+function handleSession_(body, props) {
+  var clientId = String(props.getProperty("GOOGLE_CLIENT_ID") || "").trim();
+  var secret = String(props.getProperty("SESSION_SECRET") || "").trim();
+  if (!clientId || !secret) return json_({ ok: false, error: "Sign-in is not set up yet." });
+  var credential = String(body.credential || "").trim();
+  if (!credential || credential.length > 12000) {
+    return json_({ ok: false, error: "Google sign-in didn't go through. Try again." });
+  }
+  var google = verifyGoogleIdToken_(credential, clientId);
+  if (!google.ok) return json_({ ok: false, error: "Google sign-in didn't go through. Try again." });
+  if (!listed_(google.email, props.getProperty("ALLOWED_EMAILS"))) {
+    return json_({
+      ok: false,
+      code: "not_allowed",
+      error: "This account isn't on the TSC team list. Ask Miranda for access."
+    });
+  }
+  return json_(issueSession_(google.email, google.name, props));
+}
+
+function handleRefresh_(body, props) {
+  var secret = String(props.getProperty("SESSION_SECRET") || "").trim();
+  if (!secret) return json_({ ok: false, error: "Sign-in is not set up yet." });
+  var session = readToken_(String(body.token || ""), secret, props);
+  if (session && session.role === "guest") {
+    var code = guestCode_(props);
+    if (!code || !sameSecret_(String(session.guest || ""), guestTag_(code, secret))) {
+      return json_({ ok: false, code: "unauthorized", error: "Sign in again." });
+    }
+    return json_(issueGuestSession_(secret, code));
+  }
+  var email = session ? String(session.email || "").toLowerCase() : "";
+  if (!session || !listed_(email, props.getProperty("ALLOWED_EMAILS"))) {
+    var gone = session && email && !listed_(email, props.getProperty("ALLOWED_EMAILS"));
+    return json_({
+      ok: false,
+      code: gone ? "not_allowed" : "unauthorized",
+      error: gone
+        ? "This account isn't on the TSC team list. Ask Miranda for access."
+        : "Sign in again."
+    });
+  }
+  return json_(issueSession_(email, String(session.name || ""), props));
+}
+
+function authorizeFill_(body, props) {
+  var sessionSecret = String(props.getProperty("SESSION_SECRET") || "").trim();
+  if (sessionSecret) {
+    var session = readToken_(String(body.token || ""), sessionSecret, props);
+    if (!session) return { ok: false, code: "unauthorized", error: "Sign in again to fill this with AI." };
+    if (session.role === "guest") return { ok: true, role: "guest" };
+    var email = String(session.email || "").toLowerCase();
+    if (!listed_(email, props.getProperty("ALLOWED_EMAILS"))) {
+      return { ok: false, code: "unauthorized", error: "Sign in again to fill this with AI." };
+    }
+    return { ok: true, email: email, role: session.role || "agent" };
+  }
+  var expectedSecret = props.getProperty("INTAKE_SECRET") || "";
+  if (!expectedSecret) {
+    return { ok: false, error: "AI fill is not set up yet. Add the script properties, then try again." };
+  }
+  if (!sameSecret_(String(body.secret || ""), expectedSecret)) {
+    return { ok: false, error: "AI fill refused this request." };
+  }
+  return { ok: true };
+}
+
+function verifyGoogleIdToken_(credential, clientId) {
+  var response;
+  try {
+    response = UrlFetchApp.fetch("https://oauth2.googleapis.com/tokeninfo?id_token=" + encodeURIComponent(credential), {
+      muteHttpExceptions: true
+    });
+  } catch (error) {
+    return { ok: false };
+  }
+  if (response.getResponseCode() !== 200) return { ok: false };
+  var info;
+  try {
+    info = JSON.parse(response.getContentText() || "");
+  } catch (error) {
+    return { ok: false };
+  }
+  var iss = String(info.iss || "");
+  if (iss !== "accounts.google.com" && iss !== "https://accounts.google.com") return { ok: false };
+  if (String(info.aud || "") !== clientId) return { ok: false };
+  var exp = Number(info.exp || 0);
+  if (!exp || exp * 1000 <= Date.now()) return { ok: false };
+  if (!(info.email_verified === true || String(info.email_verified) === "true")) return { ok: false };
+  var email = String(info.email || "").trim().toLowerCase();
+  if (!email || email.indexOf("@") === -1) return { ok: false };
+  var name = String(info.name || info.given_name || "").trim();
+  return { ok: true, email: email, name: name || email };
+}
+
+function issueSession_(email, name, props) {
+  var secret = String(props.getProperty("SESSION_SECRET") || "").trim();
+  var now = Math.floor(Date.now() / 1000);
+  var payload = {
+    email: email,
+    name: name || email,
+    role: listed_(email, props.getProperty("ADMIN_EMAILS")) ? "admin" : "agent",
+    iat: now,
+    exp: now + SESSION_TTL_SECONDS_
+  };
+  return {
+    ok: true,
+    token: signToken_(payload, secret),
+    email: payload.email,
+    name: payload.name,
+    role: payload.role,
+    exp: payload.exp
+  };
+}
+
+function signToken_(payload, secret) {
+  var body = b64urlEncode_(JSON.stringify(payload));
+  var mac = Utilities.computeHmacSha256Signature(body, secret);
+  return body + "." + b64urlEncode_(mac);
+}
+
+function readToken_(token, secret, props) {
+  var parts = String(token || "").split(".");
+  if (parts.length !== 2 || !parts[0] || !parts[1] || parts[0].length > 4000 || parts[1].length > 200) return null;
+  var expected;
+  try {
+    expected = b64urlEncode_(Utilities.computeHmacSha256Signature(parts[0], secret));
+  } catch (error) {
+    return null;
+  }
+  if (!sameSecret_(parts[1], expected)) return null;
+  var payload;
+  try {
+    payload = JSON.parse(b64urlDecode_(parts[0]));
+  } catch (error) {
+    return null;
+  }
+  if (!payload || typeof payload !== "object") return null;
+  if (payload.role === "guest") {
+    var code = props ? guestCode_(props) : "";
+    if (!code || !sameSecret_(String(payload.guest || ""), guestTag_(code, secret))) return null;
+    return payload;
+  }
+  if (Number(payload.exp) * 1000 <= Date.now()) return null;
+  if (!payload.email) return null;
+  return payload;
+}
+
+var GUEST_LIMIT_ = 5;
+var GUEST_WINDOW_SECONDS_ = 15 * 60;
+var GUEST_GLOBAL_LIMIT_ = 30;
+var PERSONAL_ACTIONS_ = { "my-day": true, "my-deals": true, pace: true, leads: true, scoreboard: true };
+
+function isPersonalAction_(action) {
+  return PERSONAL_ACTIONS_[action] === true;
+}
+
+function requirePersonal_(body, props) {
+  var secret = String(props.getProperty("SESSION_SECRET") || "").trim();
+  if (!secret) return { ok: false, code: "forbidden", error: "Sign in again." };
+  var session = readToken_(String(body.token || ""), secret, props);
+  if (!session || session.role === "guest") {
+    return { ok: false, code: "forbidden", error: "That view is for signed-in agents." };
+  }
+  if (!listed_(String(session.email || "").toLowerCase(), props.getProperty("ALLOWED_EMAILS"))) {
+    return { ok: false, code: "unauthorized", error: "Sign in again." };
+  }
+  return { ok: true, session: session };
+}
+
+function handleConfig_(props) {
+  return json_({ ok: true, guest: guestEnabled_() });
+}
+
+function handleGuest_(body, props) {
+  var secret = String(props.getProperty("SESSION_SECRET") || "").trim();
+  var code = guestCode_(props);
+  if (!secret || !code) return json_({ ok: false, code: "unavailable", error: "Guest access is not set up." });
+  var device = String(body.device || "");
+  if (guestLimited_(device)) {
+    return json_({ ok: false, code: "rate_limited", error: "Too many tries. Wait a few minutes and try again." });
+  }
+  var given = String(body.code || "").replace(/^\s+|\s+$/g, "");
+  if (given.length > 200) given = given.slice(0, 200);
+  if (!guestCodeMatches_(given, code, secret)) {
+    guestFail_(device);
+    return json_({ ok: false, code: "bad_code", error: "That guest code didn't work." });
+  }
+  try {
+    CacheService.getScriptCache().remove(guestAttemptKey_(device));
+  } catch (error) {
+    /* cache miss is fine */
+  }
+  return json_(issueGuestSession_(secret, code));
+}
+
+function issueGuestSession_(secret, code) {
+  // No exp. The guest tag is an HMAC of GUEST_CODE, so changing that property invalidates every guest token.
+  var payload = {
+    role: "guest",
+    name: "Guest",
+    email: "",
+    iat: Math.floor(Date.now() / 1000),
+    guest: guestTag_(code, secret)
+  };
+  return {
+    ok: true,
+    token: signToken_(payload, secret),
+    email: "",
+    name: "Guest",
+    role: "guest",
+    exp: null
+  };
+}
+
+function guestEnabled_() {
+  try {
+    return guestCode_(PropertiesService.getScriptProperties()).length > 0;
+  } catch (error) {
+    return false;
+  }
+}
+
+function guestCode_(props) {
+  return String(props.getProperty("GUEST_CODE") || "").trim();
+}
+
+function guestTag_(code, secret) {
+  return b64urlEncode_(Utilities.computeHmacSha256Signature("tsc-guest-v1:" + String(code), secret));
+}
+
+function guestCodeMatches_(given, expected, secret) {
+  return sameSecret_(guestTag_(given, secret), guestTag_(expected, secret));
+}
+
+function guestAttemptKey_(device) {
+  var clean = String(device || "").replace(/[^A-Za-z0-9_-]/g, "").slice(0, 80);
+  if (clean.length < 8) clean = "missing";
+  return "tsc-guest-fail-" + clean;
+}
+
+function guestLimited_(device) {
+  var cache = CacheService.getScriptCache();
+  var deviceCount = Number(cache.get(guestAttemptKey_(device)) || "0");
+  var allCount = Number(cache.get("tsc-guest-fail-all") || "0");
+  return deviceCount >= GUEST_LIMIT_ || allCount >= GUEST_GLOBAL_LIMIT_;
+}
+
+function guestFail_(device) {
+  var cache = CacheService.getScriptCache();
+  var deviceKey = guestAttemptKey_(device);
+  var deviceCount = Number(cache.get(deviceKey) || "0") + 1;
+  var allCount = Number(cache.get("tsc-guest-fail-all") || "0") + 1;
+  cache.put(deviceKey, String(deviceCount), GUEST_WINDOW_SECONDS_);
+  cache.put("tsc-guest-fail-all", String(allCount), GUEST_WINDOW_SECONDS_);
+}
+
+function listed_(email, raw) {
+  var want = String(email || "").trim().toLowerCase();
+  if (!want) return false;
+  return String(raw || "").split(",").some(function (item) {
+    return item.trim().toLowerCase() === want;
+  });
+}
+
+function originOk_(body, props) {
+  var allowed = props.getProperty("ALLOWED_ORIGINS") || "https://terzene.github.io,http://127.0.0.1:8765,http://localhost:8765";
+  var origin = String(body.origin || "").trim();
+  return allowed.split(",").some(function (item) { return item.trim() === origin; });
+}
+
+function b64urlEncode_(value) {
+  var encoded = Utilities.base64EncodeWebSafe(value);
+  return String(encoded).replace(/=+$/, "");
+}
+
+function b64urlDecode_(text) {
+  var padded = String(text || "") + "===".slice((String(text || "").length + 3) % 4);
+  return Utilities.newBlob(Utilities.base64DecodeWebSafe(padded)).getDataAsString();
 }
 
 function sameSecret_(given, expected) {
