@@ -39,6 +39,8 @@ function handlePost_(e) {
   if (action === "guest") return handleGuest_(body, props);
   if (action === "session") return handleSession_(body, props);
   if (action === "refresh") return handleRefresh_(body, props);
+  if (action === "call-list") return handleCallList_(body, props);
+  if (action === "call-log") return handleCallLog_(body, props);
   if (isPersonalAction_(action)) {
     var personal = requirePersonal_(body, props);
     if (!personal.ok) return json_(personal);
@@ -383,6 +385,238 @@ function requirePersonal_(body, props) {
     return { ok: false, code: "unauthorized", error: "Sign in again." };
   }
   return { ok: true, session: session };
+}
+
+var SPHERE_VISIBLE_ = 5;
+var SPHERE_RESERVE_ = 15;
+var SPHERE_SKIP_SPOTS_ = 3;
+
+function handleCallList_(body, props) {
+  var access = sphereAccess_(body, props);
+  if (!access.ok) return json_(access);
+  var book = openSphere_(props);
+  if (!book) return json_({ ok: false, code: "unconfigured", error: "Call 5 is not set up yet." });
+  var rows = sortSphere_(readContacts_(book, access.email));
+  var stats = sphereWeekStats_(book, access.email);
+  return json_({
+    ok: true,
+    people: rows.slice(0, SPHERE_VISIBLE_).map(publicContact_),
+    reserve: rows.slice(SPHERE_VISIBLE_, SPHERE_VISIBLE_ + SPHERE_RESERVE_).map(publicContact_),
+    weekCount: stats.count,
+    streak: stats.streak
+  });
+}
+
+function handleCallLog_(body, props) {
+  var access = sphereAccess_(body, props);
+  if (!access.ok) return json_(access);
+  var kind = String(body.kind || "");
+  if (kind !== "called" && kind !== "texted" && kind !== "skip") {
+    return json_({ ok: false, error: "That action could not be saved." });
+  }
+  var contactId = String(body.contactId || "").trim();
+  if (!contactId) return json_({ ok: false, error: "That action could not be saved." });
+  var book = openSphere_(props);
+  if (!book) return json_({ ok: false, code: "unconfigured", error: "Call 5 is not set up yet." });
+  var lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(10000);
+  } catch (error) {
+    return json_({ ok: false, error: "Call 5 is busy. Try again in a moment." });
+  }
+  try {
+    var rows = readContacts_(book, access.email);
+    var index = -1;
+    for (var i = 0; i < rows.length; i++) {
+      if (rows[i].id === contactId) index = i;
+    }
+    if (index < 0) return json_({ ok: false, error: "That person is not on your list." });
+    var sorted = sortSphere_(rows);
+    var sortedIndex = 0;
+    for (var s = 0; s < sorted.length; s++) {
+      if (sorted[s].id === contactId) sortedIndex = s;
+    }
+    var now = new Date();
+    var stamp = now.toISOString();
+    var target = rows[index];
+    if (kind === "skip") {
+      var spot = Math.min(sorted.length - 1, sortedIndex + SPHERE_SKIP_SPOTS_);
+      if (spot !== sortedIndex) {
+        var anchor = sorted[spot].lastContacted || 0;
+        target.lastContacted = anchor + 1000;
+        writeContactTime_(target, new Date(target.lastContacted).toISOString());
+      }
+      writeContactAction_(target, "skip");
+    } else {
+      target.lastContacted = now.getTime();
+      writeContactTime_(target, stamp);
+      writeContactAction_(target, kind);
+    }
+    appendSphereLog_(book, access.email, target.id, kind, target.name, stamp);
+    return json_({ ok: true });
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function sphereAccess_(body, props) {
+  var access = requirePersonal_(body, props);
+  if (!access.ok) return access;
+  var email = String(access.session.email || "").trim().toLowerCase();
+  var requested = String(body.agent || "").trim().toLowerCase();
+  if (requested && requested !== email) {
+    if (!listed_(email, props.getProperty("ADMIN_EMAILS"))) {
+      return { ok: false, code: "forbidden", error: "That view is for signed-in agents." };
+    }
+    email = requested;
+  }
+  if (!email || email.indexOf("@") === -1) return { ok: false, code: "forbidden", error: "Sign in again." };
+  return { ok: true, email: email, session: access.session };
+}
+
+function openSphere_(props) {
+  var id = String(props.getProperty("SPHERE_SHEET_ID") || "").trim();
+  if (!id) return null;
+  try {
+    return SpreadsheetApp.openById(id);
+  } catch (error) {
+    return null;
+  }
+}
+
+function readContacts_(book, email) {
+  var named = book.getSheetByName(email);
+  if (named) return readContactSheet_(named, email, true);
+  var contacts = book.getSheetByName("Contacts");
+  if (!contacts) return [];
+  return readContactSheet_(contacts, email, false);
+}
+
+function readContactSheet_(sheet, email, wholeTab) {
+  var width = Math.max(sheet.getLastColumn(), 1);
+  var height = sheet.getLastRow();
+  if (height < 2) return [];
+  var values = sheet.getRange(1, 1, height, width).getValues();
+  var map = {};
+  for (var c = 0; c < values[0].length; c++) {
+    var key = String(values[0][c] || "").trim().toLowerCase().replace(/\s+/g, "_");
+    if (key) map[key] = c;
+  }
+  if (map.id == null || map.name == null) return [];
+  var rows = [];
+  for (var r = 1; r < values.length; r++) {
+    var agent = map.agent_email != null ? String(values[r][map.agent_email] || "").trim().toLowerCase() : email;
+    if (!wholeTab && agent !== email) continue;
+    var id = String(values[r][map.id] || "").trim();
+    var name = String(values[r][map.name] || "").trim();
+    if (!id || !name) continue;
+    rows.push({
+      id: id,
+      name: name,
+      phone: map.phone != null ? String(values[r][map.phone] || "").trim() : "",
+      email: map.email != null ? String(values[r][map.email] || "").trim() : "",
+      type: map.type != null ? String(values[r][map.type] || "").trim() : "",
+      context: map.context != null ? String(values[r][map.context] || "").trim() : "",
+      lastContacted: map.last_contacted != null ? timeValue_(values[r][map.last_contacted]) : 0,
+      lastAction: map.last_action != null ? String(values[r][map.last_action] || "").trim() : "",
+      sheet: sheet,
+      row: r + 1,
+      timeCol: map.last_contacted != null ? map.last_contacted + 1 : 0,
+      actionCol: map.last_action != null ? map.last_action + 1 : 0
+    });
+  }
+  return rows;
+}
+
+function sortSphere_(rows) {
+  return rows.slice().sort(function (a, b) {
+    var diff = (a.lastContacted || 0) - (b.lastContacted || 0);
+    if (diff) return diff;
+    return String(a.id).localeCompare(String(b.id));
+  });
+}
+
+function writeContactTime_(row, iso) {
+  if (!row.timeCol) return;
+  row.sheet.getRange(row.row, row.timeCol).setValue(iso);
+}
+
+function writeContactAction_(row, kind) {
+  if (!row.actionCol) return;
+  row.sheet.getRange(row.row, row.actionCol).setValue(kind);
+}
+
+function appendSphereLog_(book, email, contactId, kind, name, stamp) {
+  var sheet = book.getSheetByName("Log");
+  if (!sheet) {
+    sheet = book.insertSheet("Log");
+    sheet.appendRow(["timestamp", "agent_email", "contact_id", "action", "name"]);
+  }
+  sheet.appendRow([stamp, email, contactId, kind, name]);
+}
+
+function sphereWeekStats_(book, email) {
+  var sheet = book.getSheetByName("Log");
+  if (!sheet || sheet.getLastRow() < 2) return { count: 0, streak: 0 };
+  var values = sheet.getRange(2, 1, sheet.getLastRow() - 1, Math.max(sheet.getLastColumn(), 4)).getValues();
+  var weeks = {};
+  var current = weekKey_(new Date());
+  var count = 0;
+  for (var i = 0; i < values.length; i++) {
+    if (String(values[i][1] || "").trim().toLowerCase() !== email) continue;
+    var kind = String(values[i][3] || "").trim().toLowerCase();
+    if (kind !== "called" && kind !== "texted") continue;
+    var when = timeValue_(values[i][0]);
+    if (!when) continue;
+    var key = weekKey_(new Date(when));
+    weeks[key] = (weeks[key] || 0) + 1;
+    if (key === current) count += 1;
+  }
+  var streak = 0;
+  var cursor = weeks[current] ? current : previousWeekKey_(current);
+  while (cursor && weeks[cursor]) {
+    streak += 1;
+    cursor = previousWeekKey_(cursor);
+  }
+  return { count: count, streak: streak };
+}
+
+function weekKey_(date) {
+  var tz = "America/New_York";
+  var weekday = Number(Utilities.formatDate(date, tz, "u"));
+  var y = Number(Utilities.formatDate(date, tz, "yyyy"));
+  var m = Number(Utilities.formatDate(date, tz, "MM"));
+  var d = Number(Utilities.formatDate(date, tz, "dd"));
+  var monday = new Date(Date.UTC(y, m - 1, d) - (weekday - 1) * 86400000);
+  return Utilities.formatDate(monday, "UTC", "yyyy-MM-dd");
+}
+
+function previousWeekKey_(key) {
+  var parts = String(key || "").split("-");
+  if (parts.length !== 3) return "";
+  var date = new Date(Date.UTC(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2])));
+  date = new Date(date.getTime() - 7 * 86400000);
+  return Utilities.formatDate(date, "UTC", "yyyy-MM-dd");
+}
+
+function timeValue_(value) {
+  if (Object.prototype.toString.call(value) === "[object Date]" && !isNaN(value.getTime())) return value.getTime();
+  if (typeof value === "number" && value > 20000 && value < 100000) return Math.round((value - 25569) * 86400000);
+  var parsed = Date.parse(String(value || ""));
+  return isNaN(parsed) ? 0 : parsed;
+}
+
+function publicContact_(row) {
+  return {
+    id: row.id,
+    name: row.name,
+    phone: row.phone,
+    email: row.email,
+    type: row.type,
+    context: row.context,
+    lastContacted: row.lastContacted ? new Date(row.lastContacted).toISOString() : "",
+    lastAction: row.lastAction
+  };
 }
 
 function handleConfig_(props) {
