@@ -6,6 +6,7 @@
   "use strict";
 
   var STORAGE_KEY = "tsc-portal-session";
+  var DEVICE_KEY = "tsc-portal-device";
   var NOT_ALLOWED = "This account isn't on the TSC team list. Ask Miranda for access.";
   var listeners = [];
   var gisPromise = null;
@@ -28,14 +29,15 @@
     try {
       var parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
       if (!parsed || typeof parsed !== "object" || !parsed.token) return null;
+      var role = parsed.role === "admin" ? "admin" : parsed.role === "guest" ? "guest" : "agent";
       var exp = Number(parsed.exp);
-      if (!exp || exp * 1000 <= Date.now()) return null;
+      if (role !== "guest" && (!exp || exp * 1000 <= Date.now())) return null;
       return {
         token: String(parsed.token),
         email: String(parsed.email || "").toLowerCase(),
         name: String(parsed.name || ""),
-        role: parsed.role === "admin" ? "admin" : "agent",
-        exp: exp,
+        role: role,
+        exp: role === "guest" ? null : exp,
       };
     } catch (error) {
       return null;
@@ -107,14 +109,15 @@
 
   function applyPayload(payload) {
     if (!payload || payload.ok === false || !payload.token) return false;
+    var role = payload.role === "admin" ? "admin" : payload.role === "guest" ? "guest" : "agent";
     var exp = Number(payload.exp);
-    if (!exp || exp * 1000 <= Date.now()) return false;
+    if (role !== "guest" && (!exp || exp * 1000 <= Date.now())) return false;
     write({
       token: String(payload.token),
       email: String(payload.email || "").toLowerCase(),
       name: String(payload.name || ""),
-      role: payload.role === "admin" ? "admin" : "agent",
-      exp: exp,
+      role: role,
+      exp: role === "guest" ? null : exp,
     });
     document.documentElement.classList.add("auth-ready");
     setStatus("");
@@ -246,7 +249,101 @@
     emit();
     if (!required()) return;
     setStatus(message || "", !!message);
+    hideGuestForm();
     mountButton();
+    loadGuestOption();
+  }
+
+  function deviceId() {
+    try {
+      var existing = localStorage.getItem(DEVICE_KEY) || "";
+      if (/^[A-Za-z0-9-]{16,80}$/.test(existing)) return existing;
+      var id = root.crypto && typeof root.crypto.randomUUID === "function"
+        ? root.crypto.randomUUID()
+        : "d" + Math.random().toString(36).slice(2) + Date.now().toString(36);
+      localStorage.setItem(DEVICE_KEY, id);
+      return id;
+    } catch (error) {
+      return "device-unavailable";
+    }
+  }
+
+  function hideGuestForm() {
+    var form = document.getElementById("guest-form");
+    var input = document.getElementById("guest-code");
+    if (form) form.hidden = true;
+    if (input) input.value = "";
+  }
+
+  function loadGuestOption() {
+    var link = document.getElementById("guest-link");
+    if (!link || !required() || !navigator.onLine) {
+      if (link) link.hidden = true;
+      hideGuestForm();
+      return;
+    }
+    link.hidden = true;
+    post({ action: "config", origin: location.origin }).then(function (payload) {
+      link.hidden = !(payload && payload.guest === true);
+      if (link.hidden) hideGuestForm();
+    }).catch(function () {
+      link.hidden = true;
+      hideGuestForm();
+    });
+  }
+
+  function submitGuest(event) {
+    if (event) event.preventDefault();
+    var input = document.getElementById("guest-code");
+    var code = input ? String(input.value || "") : "";
+    if (!code.trim()) {
+      setStatus("Enter the guest code.", true);
+      return;
+    }
+    setStatus("Checking the guest code…", false);
+    post({
+      action: "guest",
+      code: code,
+      device: deviceId(),
+      origin: location.origin,
+    }).then(function (payload) {
+      if (payload && payload.code === "rate_limited") {
+        setStatus("Too many tries. Wait a few minutes and try again.", true);
+        return;
+      }
+      if (payload && payload.code === "unavailable") {
+        var link = document.getElementById("guest-link");
+        if (link) link.hidden = true;
+        hideGuestForm();
+        setStatus("");
+        return;
+      }
+      if (!payload || payload.code === "bad_code" || !applyPayload(payload)) {
+        setStatus("That guest code didn't work.", true);
+        return;
+      }
+      hideGuestForm();
+    }).catch(function () {
+      setStatus("That guest code didn't work. Check your connection and try again.", true);
+    });
+  }
+
+  function bindGuest() {
+    var link = document.getElementById("guest-link");
+    var form = document.getElementById("guest-form");
+    if (link && !link.dataset.bound) {
+      link.dataset.bound = "1";
+      link.addEventListener("click", function () {
+        if (!form) return;
+        form.hidden = false;
+        var input = document.getElementById("guest-code");
+        if (input) input.focus();
+      });
+    }
+    if (form && !form.dataset.bound) {
+      form.dataset.bound = "1";
+      form.addEventListener("submit", submitGuest);
+    }
   }
 
   function start() {
@@ -259,13 +356,20 @@
     document.documentElement.classList.add("auth-required");
     if (read()) document.documentElement.classList.add("auth-ready");
     else document.documentElement.classList.remove("auth-ready");
+    bindGuest();
     emit();
     if (read()) refresh();
-    else mountButton();
+    else {
+      mountButton();
+      loadGuestOption();
+    }
     root.addEventListener("online", function () {
       if (!required()) return;
       if (read()) refresh();
-      else mountButton();
+      else {
+        mountButton();
+        loadGuestOption();
+      }
     });
   }
 
@@ -273,6 +377,11 @@
     authConfig: authConfig(),
     required: required,
     getSession: current,
+    canUsePersonal: function () {
+      if (!required()) return true;
+      var session = current();
+      return !!(session && session.role !== "guest");
+    },
     signOut: signOut,
     start: start,
     onChange: function (fn) {

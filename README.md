@@ -103,3 +103,13 @@ var authConfig = { clientId: "YOUR_CLIENT_ID.apps.googleusercontent.com", url: "
 4. Bump the `CACHE` string in `sw.js` by one so installed copies pick up the sign-in page, then commit and push.
 
 A signed-in agent gets a session token that lasts 30 days. Opening the portal online renews it. If they were already signed in and the phone is offline, the saved session still lets them in until it expires. Sign out is in the bottom menu on a phone and at the bottom of the sidebar on a desktop. An account that is not on `ALLOWED_EMAILS` sees: "This account isn't on the TSC team list. Ask Miranda for access."
+
+### Guest access
+
+Leave `GUEST_CODE` unset and the sign-in page does not offer a guest code. Do not commit the code.
+
+1. Choose a code and store it only in the Script property `GUEST_CODE`.
+2. Deploy a new version of the script.
+3. **Have a guest code?** shows under Sign in with Google only when that property is set. The script compares the code in constant time. Five wrong tries on one device within 15 minutes are refused. A shared ceiling also stops someone from getting unlimited tries by changing the device id. Apps Script does not receive the caller's IP address, so the limit is kept in CacheService this way.
+4. A guest session does not expire. It stays valid until Sign out, or until `GUEST_CODE` changes. Each guest token carries a hash of the current code, so the old token stops working when the code changes.
+5. Guests can use the portal, including forms, resources, Bold Truths, the Stoic quote, and Listing Intake AI fill. They do not get agent-specific data: My Day, My Deals, pace, leads, or a scoreboard. A Guest badge sits in the header next to Sign out.

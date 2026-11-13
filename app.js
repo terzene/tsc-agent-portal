@@ -138,6 +138,7 @@
   const shareButton = document.getElementById("share");
   const themeButton = document.getElementById("theme");
   const signOutButton = document.getElementById("sign-out");
+  const guestBadge = document.getElementById("guest-badge");
   const toast = document.getElementById("toast");
   const welcome = document.getElementById("welcome");
 
@@ -180,8 +181,9 @@
   }
 
   function syncAuthChrome(session) {
-    if (!signOutButton) return;
-    signOutButton.hidden = !(session && session.token);
+    const signedIn = !!(session && session.token);
+    if (signOutButton) signOutButton.hidden = !signedIn;
+    if (guestBadge) guestBadge.hidden = !(session && session.role === "guest");
   }
 
   function registerServiceWorker() {

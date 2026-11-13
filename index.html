@@ -37,7 +37,7 @@
         document.documentElement.classList.add("auth-required");
         try {
           var saved = JSON.parse(localStorage.getItem("tsc-portal-session") || "null");
-          if (saved && saved.token && Number(saved.exp) * 1000 > Date.now()) {
+          if (saved && saved.token && (saved.role === "guest" || Number(saved.exp) * 1000 > Date.now())) {
             document.documentElement.classList.add("auth-ready");
           }
         } catch (error) {}
@@ -90,6 +90,12 @@
       <img class="wordmark" src="assets/wordmark.png" width="1280" height="339" alt="The Sold Collective">
       <h1>Sign in with your Google account</h1>
       <div id="google-button"></div>
+      <button type="button" id="guest-link" class="guest-link" hidden>Have a guest code?</button>
+      <form id="guest-form" class="guest-form" hidden>
+        <label class="guest-label" for="guest-code">Guest code</label>
+        <input id="guest-code" type="password" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="go">
+        <button type="submit" class="guest-submit">Continue</button>
+      </form>
       <p class="sign-in-status" id="sign-in-status" role="status"></p>
     </div>
     <div class="app">
@@ -98,6 +104,7 @@
         <div class="brand-row">
           <img class="wordmark" src="assets/wordmark.png" width="1280" height="339" alt="The Sold Collective">
           <div class="brand-actions">
+            <span id="guest-badge" class="guest-badge" hidden>Guest</span>
             <button type="button" id="share" class="icon-btn" aria-label="Share this app">
               <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
                 <path d="M12 16V4M8 8l4-4 4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>

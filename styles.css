@@ -180,6 +180,76 @@ h2 {
   min-height: 44px;
 }
 
+.guest-link {
+  min-height: 44px;
+  padding: 0 8px;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.guest-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: min(100%, 280px);
+  text-align: left;
+}
+
+.guest-link[hidden],
+.guest-form[hidden],
+.guest-badge[hidden] {
+  display: none !important;
+}
+
+.guest-label {
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.guest-form input {
+  width: 100%;
+  min-height: 48px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--bg);
+  font: inherit;
+  font-size: 16px;
+}
+
+.guest-submit {
+  min-height: 48px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--ink);
+  color: var(--white);
+  font-weight: 800;
+}
+
+.guest-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 8px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: rgba(33, 31, 31, 0.06);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+:root[data-theme="dark"] .guest-badge {
+  background: rgba(255, 255, 255, 0.1);
+}
+
 html.auth-required:not(.auth-ready) .sign-in {
   display: flex;
 }
